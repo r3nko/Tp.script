@@ -8,6 +8,7 @@ local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local Stats = game:GetService("Stats")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local player = Players.LocalPlayer
 
@@ -15,9 +16,11 @@ if CoreGui:FindFirstChild("TPHubGUI") then
     CoreGui.TPHubGUI:Destroy()
 end
 
---------------------------------------------------
+
+---
+
 -- Global Constants & Palette Settings
---------------------------------------------------
+
 local GREY_ACCENT = Color3.fromRGB(200, 200, 205)
 local GREY_BORDER = Color3.fromRGB(55, 55, 62)
 local DARK_BG     = Color3.fromRGB(12, 12, 14)
@@ -33,9 +36,11 @@ local isInfJumpOn   = false
 local yOffsetVal    = 0
 local currentTween  = nil
 
---------------------------------------------------
+
+---
+
 -- Toast Notification System
---------------------------------------------------
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TPHubGUI"
 screenGui.Parent = CoreGui
@@ -57,31 +62,33 @@ local function notify(text)
     card.BackgroundColor3 = CARD_BG
     card.Parent = notificationContainer
     Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = GREY_ACCENT
-    stroke.Thickness = 1
-    stroke.Transparency = 0.3
-    stroke.Parent = card
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -10, 1, 0)
-    lbl.Position = UDim2.new(0, 5, 0, 0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = text
-    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.Font = Enum.Font.SourceSansBold
-    lbl.TextSize = 12
-    lbl.Parent = card
-    
-    task.delay(2.5, function()
-        if card then card:Destroy() end
+
+    local stroke = Instance.new("UIStroke")  
+    stroke.Color = GREY_ACCENT  
+    stroke.Thickness = 1  
+    stroke.Transparency = 0.3  
+    stroke.Parent = card  
+      
+    local lbl = Instance.new("TextLabel")  
+    lbl.Size = UDim2.new(1, -10, 1, 0)  
+    lbl.Position = UDim2.new(0, 5, 0, 0)  
+    lbl.BackgroundTransparency = 1  
+    lbl.Text = text  
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    lbl.Font = Enum.Font.SourceSansBold  
+    lbl.TextSize = 12  
+    lbl.Parent = card  
+      
+    task.delay(2.5, function()  
+        if card then card:Destroy() end  
     end)
 end
 
---------------------------------------------------
+
+---
+
 -- Floating Circular Button
---------------------------------------------------
+
 local toggleCircleBtn = Instance.new("TextButton")
 toggleCircleBtn.Name = "ToggleCircleBtn"
 toggleCircleBtn.Size = UDim2.new(0, 48, 0, 48)
@@ -102,9 +109,11 @@ circleStroke.Thickness = 1.5
 circleStroke.Transparency = 0.2
 circleStroke.Parent = toggleCircleBtn
 
---------------------------------------------------
+
+---
+
 -- Main Window Frame & Header
---------------------------------------------------
+
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 520, 0, 325)
@@ -151,7 +160,7 @@ local versionBadge = Instance.new("TextLabel")
 versionBadge.Size = UDim2.new(0, 75, 0, 18)
 versionBadge.Position = UDim2.new(0, 70, 0, 7)
 versionBadge.BackgroundColor3 = CARD_BG
-versionBadge.Text = "V5.0 FUSION"
+versionBadge.Text = "V6.0 FINAL"
 versionBadge.TextColor3 = GREY_ACCENT
 versionBadge.Font = Enum.Font.SourceSansBold
 versionBadge.TextSize = 9
@@ -196,9 +205,11 @@ minimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
---------------------------------------------------
+
+---
+
 -- Sidebar & Tabs Navigation (Strict Layout Order)
---------------------------------------------------
+
 local sidebarFrame = Instance.new("Frame")
 sidebarFrame.Name = "Sidebar"
 sidebarFrame.Size = UDim2.new(0, 135, 1, -48)
@@ -231,59 +242,60 @@ local function createTabButton(name, displayName, order)
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 13
     btn.TextXAlignment = Enum.TextXAlignment.Left
-    
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    
-    local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 3, 0, 20)
-    indicator.Position = UDim2.new(0, 4, 0.5, -10)
-    indicator.BackgroundColor3 = GREY_ACCENT
-    indicator.Visible = false
-    indicator.Parent = btn
-    Instance.new("UICorner", indicator).CornerRadius = UDim.new(0, 2)
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = GREY_BORDER
-    stroke.Thickness = 1
-    stroke.Parent = btn
-    
-    btn.Parent = sidebarFrame
-    
-    local page = Instance.new("Frame")
-    page.Size = UDim2.new(1, 0, 1, 0)
-    page.BackgroundTransparency = 1
-    page.Visible = false
-    page.Parent = contentFrame
-    
-    tabs[name] = page
-    tabButtons[name] = {Button = btn, Stroke = stroke, Indicator = indicator}
-    
-    btn.MouseButton1Click:Connect(function()
-        for tabName, tabData in pairs(tabButtons) do
-            local isSelected = (tabName == name)
-            tabs[tabName].Visible = isSelected
-            tabData.Indicator.Visible = isSelected
-            if isSelected then
-                tabData.Button.BackgroundColor3 = BUTTON_BG
-                tabData.Stroke.Color = GREY_ACCENT
-            else
-                tabData.Button.BackgroundColor3 = CARD_BG
-                tabData.Stroke.Color = GREY_BORDER
-            end
-        end
-    end)
+
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)  
+      
+    local indicator = Instance.new("Frame")  
+    indicator.Size = UDim2.new(0, 3, 0, 20)  
+    indicator.Position = UDim2.new(0, 4, 0.5, -10)  
+    indicator.BackgroundColor3 = GREY_ACCENT  
+    indicator.Visible = false  
+    indicator.Parent = btn  
+    Instance.new("UICorner", indicator).CornerRadius = UDim.new(0, 2)  
+      
+    local stroke = Instance.new("UIStroke")  
+    stroke.Color = GREY_BORDER  
+    stroke.Thickness = 1  
+    stroke.Parent = btn  
+      
+    btn.Parent = sidebarFrame  
+      
+    local page = Instance.new("Frame")  
+    page.Size = UDim2.new(1, 0, 1, 0)  
+    page.BackgroundTransparency = 1  
+    page.Visible = false  
+    page.Parent = contentFrame  
+      
+    tabs[name] = page  
+    tabButtons[name] = {Button = btn, Stroke = stroke, Indicator = indicator}  
+      
+    btn.MouseButton1Click:Connect(function()  
+        for tabName, tabData in pairs(tabButtons) do  
+            local isSelected = (tabName == name)  
+            tabs[tabName].Visible = isSelected  
+            tabData.Indicator.Visible = isSelected  
+            if isSelected then  
+                tabData.Button.BackgroundColor3 = BUTTON_BG  
+                tabData.Stroke.Color = GREY_ACCENT  
+            else  
+                tabData.Button.BackgroundColor3 = CARD_BG  
+                tabData.Stroke.Color = GREY_BORDER  
+            end  
+        end  
+    end)  
     return page
 end
 
--- 3 Tabs Only (No Saved Con) in exact required order:
-local coordinationPage = createTabButton("Coordination", "1. Coordination", 1)
-local teleportPage     = createTabButton("Teleport",     "2. Teleport",     2)
-local settingsPage     = createTabButton("Settings",     "3. Settings",     3)
+-- Tabs Setup in exact required order:
+local mainPage         = createTabButton("Main",         "1. Main",         1)
+local coordinationPage = createTabButton("Coordination", "2. Coordination", 2)
+local teleportPage     = createTabButton("Teleport",     "3. Teleport",     3)
+local settingsPage     = createTabButton("Settings",     "4. Settings",     4)
 
-coordinationPage.Visible = true
-tabButtons["Coordination"].Button.BackgroundColor3 = BUTTON_BG
-tabButtons["Coordination"].Stroke.Color = GREY_ACCENT
-tabButtons["Coordination"].Indicator.Visible = true
+mainPage.Visible = true
+tabButtons["Main"].Button.BackgroundColor3 = BUTTON_BG
+tabButtons["Main"].Stroke.Color = GREY_ACCENT
+tabButtons["Main"].Indicator.Visible = true
 
 local function applyBtnStyle(btn)
     local s = Instance.new("UIStroke")
@@ -294,9 +306,157 @@ local function applyBtnStyle(btn)
     return s
 end
 
---------------------------------------------------
--- 1. Coordination Tab
---------------------------------------------------
+
+---
+
+-- 1. Main Tab (User & Game Profiles)
+
+local mainScroll = Instance.new("ScrollingFrame")
+mainScroll.Size = UDim2.new(1, 0, 1, 0)
+mainScroll.BackgroundTransparency = 1
+mainScroll.ScrollBarThickness = 4
+mainScroll.ScrollBarImageColor3 = GREY_ACCENT
+mainScroll.Parent = mainPage
+
+local mainLayout = Instance.new("UIListLayout")
+mainLayout.Parent = mainScroll
+mainLayout.Padding = UDim.new(0, 8)
+
+-- User Profile Card
+local userCard = Instance.new("Frame")
+userCard.Size = UDim2.new(1, -10, 0, 115)
+userCard.BackgroundColor3 = CARD_BG
+userCard.Parent = mainScroll
+Instance.new("UICorner", userCard).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", userCard).Color = GREY_BORDER
+
+local userAvatar = Instance.new("ImageLabel")
+userAvatar.Size = UDim2.new(0, 75, 0, 75)
+userAvatar.Position = UDim2.new(0, 15, 0.5, -37.5)
+userAvatar.BackgroundColor3 = DARK_BG
+userAvatar.Image = ""
+userAvatar.Parent = userCard
+Instance.new("UICorner", userAvatar).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", userAvatar).Color = GREY_ACCENT
+
+task.spawn(function()
+    local success, content = pcall(function()
+        return Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    end)
+    if success and content then
+        userAvatar.Image = content
+    end
+end)
+
+local usernameLbl = Instance.new("TextLabel")
+usernameLbl.Size = UDim2.new(0, 200, 0, 24)
+usernameLbl.Position = UDim2.new(0, 105, 0, 20)
+usernameLbl.BackgroundTransparency = 1
+usernameLbl.Text = player.Name
+usernameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+usernameLbl.Font = Enum.Font.SourceSansBold
+usernameLbl.TextSize = 16
+usernameLbl.TextXAlignment = Enum.TextXAlignment.Left
+usernameLbl.Parent = userCard
+
+local userIdLbl = Instance.new("TextLabel")
+userIdLbl.Size = UDim2.new(0, 200, 0, 20)
+userIdLbl.Position = UDim2.new(0, 105, 0, 44)
+userIdLbl.BackgroundTransparency = 1
+userIdLbl.Text = "Id:" .. player.UserId
+userIdLbl.TextColor3 = GREY_ACCENT
+userIdLbl.Font = Enum.Font.SourceSansBold
+userIdLbl.TextSize = 12
+userIdLbl.TextXAlignment = Enum.TextXAlignment.Left
+userIdLbl.Parent = userCard
+
+local accountAgeLbl = Instance.new("TextLabel")
+accountAgeLbl.Size = UDim2.new(0, 200, 0, 20)
+accountAgeLbl.Position = UDim2.new(0, 105, 0, 68)
+accountAgeLbl.BackgroundTransparency = 1
+accountAgeLbl.Text = "account age: " .. player.AccountAge .. " days"
+accountAgeLbl.TextColor3 = GREY_ACCENT
+accountAgeLbl.Font = Enum.Font.SourceSansBold
+accountAgeLbl.TextSize = 12
+accountAgeLbl.TextXAlignment = Enum.TextXAlignment.Left
+accountAgeLbl.Parent = userCard
+
+local watermarkLbl = Instance.new("TextLabel")
+watermarkLbl.Size = UDim2.new(0, 140, 1, 0)
+watermarkLbl.Position = UDim2.new(1, -145, 0, 0)
+watermarkLbl.BackgroundTransparency = 1
+watermarkLbl.Text = "HAPPY\nHALLOWEEN"
+watermarkLbl.TextColor3 = Color3.fromRGB(45, 45, 52)
+watermarkLbl.Font = Enum.Font.SourceSansBold
+watermarkLbl.TextSize = 18
+watermarkLbl.TextXAlignment = Enum.TextXAlignment.Center
+watermarkLbl.Parent = userCard
+
+-- Game Profile Card
+local gameCard = Instance.new("Frame")
+gameCard.Size = UDim2.new(1, -10, 0, 115)
+gameCard.BackgroundColor3 = CARD_BG
+gameCard.Parent = mainScroll
+Instance.new("UICorner", gameCard).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", gameCard).Color = GREY_BORDER
+
+local gameAvatar = Instance.new("ImageLabel")
+gameAvatar.Size = UDim2.new(0, 75, 0, 75)
+gameAvatar.Position = UDim2.new(0, 15, 0.5, -37.5)
+gameAvatar.BackgroundColor3 = DARK_BG
+gameAvatar.Image = ""
+gameAvatar.Parent = gameCard
+Instance.new("UICorner", gameAvatar).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", gameAvatar).Color = GREY_ACCENT
+
+local gameNameLbl = Instance.new("TextLabel")
+gameNameLbl.Size = UDim2.new(0, 250, 0, 24)
+gameNameLbl.Position = UDim2.new(0, 105, 0, 32)
+gameNameLbl.BackgroundTransparency = 1
+gameNameLbl.Text = "game name"
+gameNameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+gameNameLbl.Font = Enum.Font.SourceSansBold
+gameNameLbl.TextSize = 16
+gameNameLbl.TextXAlignment = Enum.TextXAlignment.Left
+gameNameLbl.Parent = gameCard
+
+local gameIdLbl = Instance.new("TextLabel")
+gameIdLbl.Size = UDim2.new(0, 250, 0, 20)
+gameIdLbl.Position = UDim2.new(0, 105, 0, 60)
+gameIdLbl.BackgroundTransparency = 1
+gameIdLbl.Text = "game id"
+gameIdLbl.TextColor3 = GREY_ACCENT
+gameIdLbl.Font = Enum.Font.SourceSansBold
+gameIdLbl.TextSize = 12
+gameIdLbl.TextXAlignment = Enum.TextXAlignment.Left
+gameIdLbl.Parent = gameCard
+
+task.spawn(function()
+    local success, info = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId)
+    end)
+    if success and info then
+        gameNameLbl.Text = info.Name or game.Name
+    else
+        gameNameLbl.Text = game.Name
+    end
+    gameIdLbl.Text = tostring(game.PlaceId)
+
+    local okIcon, iconContent = pcall(function()
+        return MarketplaceService:GetProductInfo(game.PlaceId).IconImageAssetId
+    end)
+    if okIcon and iconContent and iconContent > 0 then
+        gameAvatar.Image = "rbxassetid://" .. tostring(iconContent)
+    end
+end)
+
+mainScroll.CanvasSize = UDim2.new(0, 0, 0, mainLayout.AbsoluteContentSize.Y + 10)
+
+
+---
+
+-- 2. Coordination Tab
+
 local coordScroll = Instance.new("ScrollingFrame")
 coordScroll.Size = UDim2.new(1, 0, 1, 0)
 coordScroll.BackgroundTransparency = 1
@@ -419,9 +579,11 @@ applyBtnStyle(autoSaveSlotBtn)
 
 coordScroll.CanvasSize = UDim2.new(0, 0, 0, coordLayout.AbsoluteContentSize.Y + 10)
 
---------------------------------------------------
--- 2. Teleport Tab Setup
---------------------------------------------------
+
+---
+
+-- 3. Teleport Tab Setup
+
 local speedInput = Instance.new("TextBox")
 speedInput.Name = "SpeedInput"
 speedInput.Size = UDim2.new(0, 100, 0, 28)
@@ -516,88 +678,88 @@ local function createWaypointSlot(index, initialText)
     slotFrame.BackgroundColor3 = CARD_BG
     slotFrame.Parent = teleportScroll
     Instance.new("UICorner", slotFrame).CornerRadius = UDim.new(0, 6)
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = GREY_BORDER
-    stroke.Thickness = 1
-    stroke.Parent = slotFrame
-    
-    local numLabel = Instance.new("TextLabel")
-    numLabel.Size = UDim2.new(0, 24, 1, 0)
-    numLabel.BackgroundTransparency = 1
-    numLabel.Text = index .. "."
-    numLabel.TextColor3 = GREY_ACCENT
-    numLabel.Font = Enum.Font.SourceSansBold
-    numLabel.TextSize = 11
-    numLabel.Parent = slotFrame
-    
-    local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -115, 1, 0)
-    input.Position = UDim2.new(0, 24, 0, 0)
-    input.BackgroundTransparency = 1
-    input.TextColor3 = Color3.fromRGB(255, 255, 255)
-    input.PlaceholderText = "Waypoint " .. index .. " (X, Y, Z)"
-    input.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)
-    input.Text = initialText or ""
-    input.Font = Enum.Font.SourceSans
-    input.TextSize = 12
-    input.TextXAlignment = Enum.TextXAlignment.Left
-    input.Parent = slotFrame
-    
-    local tpSlotBtn = Instance.new("TextButton")
-    tpSlotBtn.Size = UDim2.new(0, 26, 0, 22)
-    tpSlotBtn.Position = UDim2.new(1, -88, 0, 5)
-    tpSlotBtn.BackgroundColor3 = BUTTON_BG
-    tpSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    tpSlotBtn.Text = "TP"
-    tpSlotBtn.Font = Enum.Font.SourceSansBold
-    tpSlotBtn.TextSize = 10
-    tpSlotBtn.Parent = slotFrame
-    Instance.new("UICorner", tpSlotBtn).CornerRadius = UDim.new(0, 4)
-    
-    local setSlotBtn = Instance.new("TextButton")
-    setSlotBtn.Size = UDim2.new(0, 30, 0, 22)
-    setSlotBtn.Position = UDim2.new(1, -58, 0, 5)
-    setSlotBtn.BackgroundColor3 = BUTTON_BG
-    setSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    setSlotBtn.Text = "Set"
-    setSlotBtn.Font = Enum.Font.SourceSansBold
-    setSlotBtn.TextSize = 10
-    setSlotBtn.Parent = slotFrame
-    Instance.new("UICorner", setSlotBtn).CornerRadius = UDim.new(0, 4)
-    
-    local delSlotBtn = Instance.new("TextButton")
-    delSlotBtn.Size = UDim2.new(0, 22, 0, 22)
-    delSlotBtn.Position = UDim2.new(1, -25, 0, 5)
-    delSlotBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)
-    delSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    delSlotBtn.Text = "X"
-    delSlotBtn.Font = Enum.Font.SourceSansBold
-    delSlotBtn.TextSize = 10
-    delSlotBtn.Parent = slotFrame
-    Instance.new("UICorner", delSlotBtn).CornerRadius = UDim.new(0, 4)
-    
-    tpSlotBtn.MouseButton1Click:Connect(function()
-        local pos = parseCoordsString(input.Text)
-        if pos and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
-            notify("Teleported to Slot " .. index)
-        end
-    end)
-    
-    setSlotBtn.MouseButton1Click:Connect(function()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local pos = player.Character.HumanoidRootPart.Position
-            input.Text = string.format("%.1f, %.1f, %.1f", pos.X, pos.Y + yOffsetVal, pos.Z)
-            notify("Set Slot " .. index)
-        end
-    end)
-    
-    delSlotBtn.MouseButton1Click:Connect(function() input.Text = "" end)
-    
-    local item = {Frame = slotFrame, Stroke = stroke, Input = input}
-    table.insert(waypointsData, item)
-    updateWaypointsScrollCanvas()
+
+    local stroke = Instance.new("UIStroke")  
+    stroke.Color = GREY_BORDER  
+    stroke.Thickness = 1  
+    stroke.Parent = slotFrame  
+      
+    local numLabel = Instance.new("TextLabel")  
+    numLabel.Size = UDim2.new(0, 24, 1, 0)  
+    numLabel.BackgroundTransparency = 1  
+    numLabel.Text = index .. "."  
+    numLabel.TextColor3 = GREY_ACCENT  
+    numLabel.Font = Enum.Font.SourceSansBold  
+    numLabel.TextSize = 11  
+    numLabel.Parent = slotFrame  
+      
+    local input = Instance.new("TextBox")  
+    input.Size = UDim2.new(1, -115, 1, 0)  
+    input.Position = UDim2.new(0, 24, 0, 0)  
+    input.BackgroundTransparency = 1  
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    input.PlaceholderText = "Waypoint " .. index .. " (X, Y, Z)"  
+    input.PlaceholderColor3 = Color3.fromRGB(110, 110, 110)  
+    input.Text = initialText or ""  
+    input.Font = Enum.Font.SourceSans  
+    input.TextSize = 12  
+    input.TextXAlignment = Enum.TextXAlignment.Left  
+    input.Parent = slotFrame  
+      
+    local tpSlotBtn = Instance.new("TextButton")  
+    tpSlotBtn.Size = UDim2.new(0, 26, 0, 22)  
+    tpSlotBtn.Position = UDim2.new(1, -88, 0, 5)  
+    tpSlotBtn.BackgroundColor3 = BUTTON_BG  
+    tpSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    tpSlotBtn.Text = "TP"  
+    tpSlotBtn.Font = Enum.Font.SourceSansBold  
+    tpSlotBtn.TextSize = 10  
+    tpSlotBtn.Parent = slotFrame  
+    Instance.new("UICorner", tpSlotBtn).CornerRadius = UDim.new(0, 4)  
+      
+    local setSlotBtn = Instance.new("TextButton")  
+    setSlotBtn.Size = UDim2.new(0, 30, 0, 22)  
+    setSlotBtn.Position = UDim2.new(1, -58, 0, 5)  
+    setSlotBtn.BackgroundColor3 = BUTTON_BG  
+    setSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    setSlotBtn.Text = "Set"  
+    setSlotBtn.Font = Enum.Font.SourceSansBold  
+    setSlotBtn.TextSize = 10  
+    setSlotBtn.Parent = slotFrame  
+    Instance.new("UICorner", setSlotBtn).CornerRadius = UDim.new(0, 4)  
+      
+    local delSlotBtn = Instance.new("TextButton")  
+    delSlotBtn.Size = UDim2.new(0, 22, 0, 22)  
+    delSlotBtn.Position = UDim2.new(1, -25, 0, 5)  
+    delSlotBtn.BackgroundColor3 = Color3.fromRGB(150, 40, 40)  
+    delSlotBtn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    delSlotBtn.Text = "X"  
+    delSlotBtn.Font = Enum.Font.SourceSansBold  
+    delSlotBtn.TextSize = 10  
+    delSlotBtn.Parent = slotFrame  
+    Instance.new("UICorner", delSlotBtn).CornerRadius = UDim.new(0, 4)  
+      
+    tpSlotBtn.MouseButton1Click:Connect(function()  
+        local pos = parseCoordsString(input.Text)  
+        if pos and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then  
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)  
+            notify("Teleported to Slot " .. index)  
+        end  
+    end)  
+      
+    setSlotBtn.MouseButton1Click:Connect(function()  
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then  
+            local pos = player.Character.HumanoidRootPart.Position  
+            input.Text = string.format("%.1f, %.1f, %.1f", pos.X, pos.Y + yOffsetVal, pos.Z)  
+            notify("Set Slot " .. index)  
+        end  
+    end)  
+      
+    delSlotBtn.MouseButton1Click:Connect(function() input.Text = "" end)  
+      
+    local item = {Frame = slotFrame, Stroke = stroke, Input = input}  
+    table.insert(waypointsData, item)  
+    updateWaypointsScrollCanvas()  
     return item
 end
 
@@ -605,9 +767,11 @@ for i = 1, 10 do createWaypointSlot(i) end
 newSlotBtn.MouseButton1Click:Connect(function() createWaypointSlot(#waypointsData + 1) end)
 clearAllBtn.MouseButton1Click:Connect(function() for _, item in ipairs(waypointsData) do item.Input.Text = "" end end)
 
---------------------------------------------------
--- 3. Settings Tab Setup
---------------------------------------------------
+
+---
+
+-- 4. Settings Tab Setup
+
 local settingsScroll = Instance.new("ScrollingFrame")
 settingsScroll.Size = UDim2.new(1, 0, 1, 0)
 settingsScroll.BackgroundTransparency = 1
@@ -626,47 +790,47 @@ local function createSettingCard(title, desc, defaultState, callback)
     card.Parent = settingsScroll
     Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
     Instance.new("UIStroke", card).Color = GREY_BORDER
-    
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, 180, 0, 22)
-    lbl.Position = UDim2.new(0, 12, 0, 5)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = title
-    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-    lbl.Font = Enum.Font.SourceSansBold
-    lbl.TextSize = 13
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Parent = card
-    
-    local sub = Instance.new("TextLabel")
-    sub.Size = UDim2.new(0, 200, 0, 18)
-    sub.Position = UDim2.new(0, 12, 0, 25)
-    sub.BackgroundTransparency = 1
-    sub.Text = desc
-    sub.TextColor3 = Color3.fromRGB(150, 150, 150)
-    sub.Font = Enum.Font.SourceSans
-    sub.TextSize = 11
-    sub.TextXAlignment = Enum.TextXAlignment.Left
-    sub.Parent = card
-    
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 95, 0, 30)
-    btn.Position = UDim2.new(1, -105, 0.5, -15)
-    btn.BackgroundColor3 = BUTTON_BG
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Text = title .. ": " .. (defaultState and "ON" or "OFF")
-    btn.Font = Enum.Font.SourceSansBold
-    btn.TextSize = 11
-    btn.Parent = card
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    applyBtnStyle(btn)
-    
-    local state = defaultState
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.Text = title .. ": " .. (state and "ON" or "OFF")
-        if callback then callback(state) end
-    end)
+
+    local lbl = Instance.new("TextLabel")  
+    lbl.Size = UDim2.new(0, 180, 0, 22)  
+    lbl.Position = UDim2.new(0, 12, 0, 5)  
+    lbl.BackgroundTransparency = 1  
+    lbl.Text = title  
+    lbl.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    lbl.Font = Enum.Font.SourceSansBold  
+    lbl.TextSize = 13  
+    lbl.TextXAlignment = Enum.TextXAlignment.Left  
+    lbl.Parent = card  
+      
+    local sub = Instance.new("TextLabel")  
+    sub.Size = UDim2.new(0, 200, 0, 18)  
+    sub.Position = UDim2.new(0, 12, 0, 25)  
+    sub.BackgroundTransparency = 1  
+    sub.Text = desc  
+    sub.TextColor3 = Color3.fromRGB(150, 150, 150)  
+    sub.Font = Enum.Font.SourceSans  
+    sub.TextSize = 11  
+    sub.TextXAlignment = Enum.TextXAlignment.Left  
+    sub.Parent = card  
+      
+    local btn = Instance.new("TextButton")  
+    btn.Size = UDim2.new(0, 95, 0, 30)  
+    btn.Position = UDim2.new(1, -105, 0.5, -15)  
+    btn.BackgroundColor3 = BUTTON_BG  
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)  
+    btn.Text = title .. ": " .. (defaultState and "ON" or "OFF")  
+    btn.Font = Enum.Font.SourceSansBold  
+    btn.TextSize = 11  
+    btn.Parent = card  
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)  
+    applyBtnStyle(btn)  
+      
+    local state = defaultState  
+    btn.MouseButton1Click:Connect(function()  
+        state = not state  
+        btn.Text = title .. ": " .. (state and "ON" or "OFF")  
+        if callback then callback(state) end  
+    end)  
     return card
 end
 
@@ -680,9 +844,11 @@ end)
 
 settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y + 10)
 
---------------------------------------------------
+
+---
+
 -- Event Bindings
---------------------------------------------------
+
 RunService.RenderStepped:Connect(function()
     if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
         local pos = player.Character.HumanoidRootPart.Position

@@ -1,0 +1,874 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ================================================
+-- AUTO-CLEANUP PREVIOUS INSTANCES & ATTRIBUTES
+-- ================================================
+local GUI_NAME = "HitboxExpanderGui_FastButtons"
+local CoreGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+
+local Connections = {}
+local PlayerConns = {}
+local HitboxOverrides = {}
+local EspOverrides = {}
+
+local existingGui = CoreGui:FindFirstChild(GUI_NAME)
+if existingGui then
+    existingGui:Destroy()
+end
+
+-- Reset any leftover modifications on existing players
+for _, player in ipairs(Players:GetPlayers()) do
+    if player.Character then
+        local root = player.Character:FindFirstChild("HumanoidRootPart")
+        if root and root:GetAttribute("Root_OrigSize") then
+            root.Size = root:GetAttribute("Root_OrigSize")
+            root.Transparency = root:GetAttribute("Root_OrigTrans") or 1
+            root.Color = root:GetAttribute("Root_OrigColor") or Color3.fromRGB(163, 162, 165)
+            root.CanCollide = root:GetAttribute("Root_OrigCanCollide") ~= false
+        end
+        local highlight = player.Character:FindFirstChild("ESPHighlight")
+        if highlight then highlight:Destroy() end
+    end
+end
+
+-- Global Settings
+local HitboxEnabled = false
+local EspEnabled = false
+local HideHeadEnabled = false
+local HitboxSize = 5
+local IsMinimized = false
+
+-- ScreenGui Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = GUI_NAME
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = CoreGui
+
+-- Camera Tracking & Viewport Boundaries
+local camera = workspace.CurrentCamera
+local camConn = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    camera = workspace.CurrentCamera
+end)
+table.insert(Connections, camConn)
+
+local function getClampedPosition(frame, targetPos)
+    local viewportSize = camera and camera.ViewportSize or Vector2.new(800, 600)
+    local frameSize = frame.AbsoluteSize
+    local x = math.clamp(targetPos.X.Offset, 10, viewportSize.X - frameSize.X - 10)
+    local y = math.clamp(targetPos.Y.Offset, 10, viewportSize.Y - frameSize.Y - 10)
+    return UDim2.new(targetPos.X.Scale, x, targetPos.Y.Scale, y)
+end
+
+-- ================================================
+-- UNIVERSAL DRAG ENGINE
+-- ================================================
+local function enableCustomDrag(frame)
+    local dragging = false
+    local dragInput, dragStart, startPos
+
+    local inputBeganConn = frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            local inputEndedConn
+            inputEndedConn = UserInputService.InputEnded:Connect(function(endInput)
+                if endInput.UserInputType == Enum.UserInputType.MouseButton1 or endInput.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                    if inputEndedConn then inputEndedConn:Disconnect() end
+                end
+            end)
+            table.insert(Connections, inputEndedConn)
+        end
+    end)
+
+    local inputChangedConn = frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    local globalInputChangedConn = UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            local rawPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            frame.Position = getClampedPosition(frame, rawPos)
+        end
+    end)
+
+    table.insert(Connections, inputBeganConn)
+    table.insert(Connections, inputChangedConn)
+    table.insert(Connections, globalInputChangedConn)
+end
+
+-- ================================================
+-- FLOATING TOGGLE CIRCLE
+-- ================================================
+local ToggleCircle = Instance.new("TextButton")
+ToggleCircle.Name = "ToggleCircle"
+ToggleCircle.Size = UDim2.new(0, 50, 0, 50)
+ToggleCircle.Position = UDim2.new(0.92, 0, 0.45, 0)
+ToggleCircle.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+ToggleCircle.BackgroundTransparency = 0.15
+ToggleCircle.Text = "🎯"
+ToggleCircle.TextSize = 20
+ToggleCircle.Active = true
+ToggleCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+ToggleCircle.ZIndex = 50
+ToggleCircle.Parent = ScreenGui
+
+local CircleCorner = Instance.new("UICorner")
+CircleCorner.CornerRadius = UDim.new(1, 0)
+CircleCorner.Parent = ToggleCircle
+
+local CircleStroke = Instance.new("UIStroke")
+CircleStroke.Thickness = 1.5
+CircleStroke.Color = Color3.fromRGB(0, 230, 255)
+CircleStroke.Parent = ToggleCircle
+
+enableCustomDrag(ToggleCircle)
+
+task.spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        local pulse1 = TweenService:Create(CircleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness = 3, Transparency = 0.1})
+        pulse1:Play()
+        pulse1.Completed:Wait()
+        if not ScreenGui or not ScreenGui.Parent then break end
+        local pulse2 = TweenService:Create(CircleStroke, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Thickness = 1.5, Transparency = 0.5})
+        pulse2:Play()
+        pulse2.Completed:Wait()
+    end
+end)
+
+-- ================================================
+-- MAIN FRAME DESIGN
+-- ================================================
+local isMobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local mainWidth = isMobile and 270 or 290
+local mainHeight = isMobile and 280 or 295
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, mainWidth, 0, mainHeight)
+MainFrame.Position = UDim2.new(0.12, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+MainFrame.BackgroundTransparency = 0.15
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.ClipsDescendants = false
+MainFrame.Visible = true
+MainFrame.ZIndex = 10
+MainFrame.Parent = ScreenGui
+
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 14)
+FrameCorner.Parent = MainFrame
+
+local FrameStroke = Instance.new("UIStroke")
+FrameStroke.Thickness = 1.8
+FrameStroke.Color = Color3.fromRGB(0, 230, 255)
+FrameStroke.Parent = MainFrame
+
+enableCustomDrag(MainFrame)
+
+-- Background Particles
+local ParticleContainer = Instance.new("Frame")
+ParticleContainer.Size = UDim2.new(1, 0, 1, 0)
+ParticleContainer.BackgroundTransparency = 1
+ParticleContainer.ClipsDescendants = true
+ParticleContainer.ZIndex = 10
+ParticleContainer.Parent = MainFrame
+
+for i = 1, 8 do
+    local p = Instance.new("Frame")
+    p.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
+    p.Position = UDim2.new(math.random(), 0, math.random(), 0)
+    p.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
+    p.BackgroundTransparency = math.random(4, 7) / 10
+    p.BorderSizePixel = 0
+    p.ZIndex = 10
+    p.Parent = ParticleContainer
+
+    local pCorner = Instance.new("UICorner")
+    pCorner.CornerRadius = UDim.new(1, 0)
+    pCorner.Parent = p
+
+    task.spawn(function()
+        while ScreenGui and ScreenGui.Parent do
+            local targetPos = UDim2.new(math.random(), 0, math.random(), 0)
+            local dur = math.random(6, 12)
+            local move = TweenService:Create(p, TweenInfo.new(dur, Enum.EasingStyle.Sine), {Position = targetPos})
+            move:Play()
+            move.Completed:Wait()
+        end
+    end)
+end
+
+-- Header Bar
+local Header = Instance.new("TextButton")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 42)
+Header.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+Header.BackgroundTransparency = 0.3
+Header.BorderSizePixel = 0
+Header.Text = ""
+Header.AutoButtonColor = false
+Header.ZIndex = 11
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 14)
+HeaderCorner.Parent = Header
+
+local GlowDot = Instance.new("Frame")
+GlowDot.Size = UDim2.new(0, 10, 0, 10)
+GlowDot.Position = UDim2.new(0, 12, 0.5, -5)
+GlowDot.BackgroundColor3 = Color3.fromRGB(0, 230, 255)
+GlowDot.BorderSizePixel = 0
+GlowDot.ZIndex = 12
+GlowDot.Parent = Header
+
+local GlowDotCorner = Instance.new("UICorner")
+GlowDotCorner.CornerRadius = UDim.new(1, 0)
+GlowDotCorner.Parent = GlowDot
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0.45, 0, 0.5, 0)
+Title.Position = UDim2.new(0, 28, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "HITBOX EXPANDER"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 11
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 12
+Title.Parent = Header
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Size = UDim2.new(0.45, 0, 0.4, 0)
+SubTitle.Position = UDim2.new(0, 28, 0, 20)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "created by renko"
+SubTitle.TextColor3 = Color3.fromRGB(0, 230, 255)
+SubTitle.TextSize = 9
+SubTitle.Font = Enum.Font.GothamSemibold
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.ZIndex = 12
+SubTitle.Parent = Header
+
+local Separator = Instance.new("Frame")
+Separator.Size = UDim2.new(0, 1, 0, 24)
+Separator.Position = UDim2.new(0.55, 0, 0.5, -12)
+Separator.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+Separator.BorderSizePixel = 0
+Separator.ZIndex = 12
+Separator.Parent = Header
+
+local PerformanceLabel = Instance.new("TextLabel")
+PerformanceLabel.Size = UDim2.new(0.42, -10, 1, 0)
+PerformanceLabel.Position = UDim2.new(0.57, 0, 0, 0)
+PerformanceLabel.BackgroundTransparency = 1
+PerformanceLabel.Text = "FPS: -- | PING: --"
+PerformanceLabel.TextColor3 = Color3.fromRGB(0, 230, 255)
+PerformanceLabel.TextSize = 8
+PerformanceLabel.Font = Enum.Font.GothamSemibold
+PerformanceLabel.TextXAlignment = Enum.TextXAlignment.Right
+PerformanceLabel.ZIndex = 12
+PerformanceLabel.Parent = Header
+
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Size = UDim2.new(1, 0, 1, -42)
+ContentContainer.Position = UDim2.new(0, 0, 0, 42)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.ZIndex = 11
+ContentContainer.Parent = MainFrame
+
+local InputLabel = Instance.new("TextLabel")
+InputLabel.Size = UDim2.new(0.5, 0, 0, 18)
+InputLabel.Position = UDim2.new(0.07, 0, 0.03, 0)
+InputLabel.BackgroundTransparency = 1
+InputLabel.Text = "HITBOX SIZE (1-50)"
+InputLabel.TextColor3 = Color3.fromRGB(140, 145, 170)
+InputLabel.TextSize = 9
+InputLabel.Font = Enum.Font.GothamBold
+InputLabel.TextXAlignment = Enum.TextXAlignment.Left
+InputLabel.ZIndex = 12
+InputLabel.Parent = ContentContainer
+
+local SizeInput = Instance.new("TextBox")
+SizeInput.Size = UDim2.new(0.86, 0, 0, 30)
+SizeInput.Position = UDim2.new(0.07, 0, 0.12, 0)
+SizeInput.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+SizeInput.Text = tostring(HitboxSize)
+SizeInput.TextColor3 = Color3.fromRGB(0, 230, 255)
+SizeInput.TextSize = 12
+SizeInput.Font = Enum.Font.GothamBold
+SizeInput.ZIndex = 12
+SizeInput.Parent = ContentContainer
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 8)
+InputCorner.Parent = SizeInput
+
+local InputStroke = Instance.new("UIStroke")
+InputStroke.Thickness = 1
+InputStroke.Color = Color3.fromRGB(45, 50, 70)
+InputStroke.Parent = SizeInput
+
+-- ================================================
+-- REBUILT FAST BUTTON ENGINE
+-- ================================================
+local function attachFastHoverAndClick(btn)
+    local stroke = btn:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
+    stroke.Thickness = 1
+    stroke.Color = Color3.fromRGB(45, 50, 70)
+    stroke.Parent = btn
+
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+        stroke.Color = Color3.fromRGB(0, 230, 255)
+    end)
+
+    btn.MouseLeave:Connect(function()
+        btn.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+        stroke.Color = Color3.fromRGB(45, 50, 70)
+    end)
+end
+
+-- ================================================
+-- PLAYER LIST DROPDOWNS
+-- ================================================
+local activeDropdown = nil
+local dropdownRefreshers = {}
+
+local function createPlayerDropdown(mode, parentBtn)
+    local panel = Instance.new("ScrollingFrame")
+    panel.Size = UDim2.new(1, 0, 0, 130)
+    panel.Position = UDim2.new(0, 0, 1, 4)
+    panel.BackgroundColor3 = Color3.fromRGB(14, 14, 20)
+    panel.BorderSizePixel = 0
+    panel.Visible = false
+    panel.CanvasSize = UDim2.new(0, 0, 0, 0)
+    panel.ScrollBarThickness = 3
+    panel.ScrollBarImageColor3 = Color3.fromRGB(0, 230, 255)
+    panel.ZIndex = 30
+    panel.Parent = parentBtn
+
+    local pCorner = Instance.new("UICorner")
+    pCorner.CornerRadius = UDim.new(0, 8)
+    pCorner.Parent = panel
+
+    local pStroke = Instance.new("UIStroke")
+    pStroke.Thickness = 1
+    pStroke.Color = Color3.fromRGB(0, 230, 255)
+    pStroke.Transparency = 0.5
+    pStroke.Parent = panel
+
+    local pLayout = Instance.new("UIListLayout")
+    pLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    pLayout.Padding = UDim.new(0, 3)
+    pLayout.Parent = panel
+
+    local pPadding = Instance.new("UIPadding")
+    pPadding.PaddingTop = UDim.new(0, 4)
+    pPadding.PaddingBottom = UDim.new(0, 4)
+    pPadding.PaddingLeft = UDim.new(0, 4)
+    pPadding.PaddingRight = UDim.new(0, 4)
+    pPadding.Parent = panel
+
+    local processCharacter -- Forward Ref
+
+    local function refreshList()
+        if not panel or not panel.Parent then return end
+
+        for _, child in ipairs(panel:GetChildren()) do
+            if child:IsA("Frame") then child:Destroy() end
+        end
+
+        local count = 0
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                count = count + 1
+                local row = Instance.new("Frame")
+                row.Size = UDim2.new(1, 0, 0, 36)
+                row.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+                row.BorderSizePixel = 0
+                row.LayoutOrder = count
+                row.ZIndex = 31
+                row.Parent = panel
+
+                local rCorner = Instance.new("UICorner")
+                rCorner.CornerRadius = UDim.new(0, 6)
+                rCorner.Parent = row
+
+                local avatar = Instance.new("ImageLabel")
+                avatar.Size = UDim2.new(0, 26, 0, 26)
+                avatar.Position = UDim2.new(0, 5, 0.5, -13)
+                avatar.BackgroundTransparency = 1
+                avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. player.UserId .. "&w=48&h=48"
+                avatar.ZIndex = 32
+                avatar.Parent = row
+
+                local avCorner = Instance.new("UICorner")
+                avCorner.CornerRadius = UDim.new(1, 0)
+                avCorner.Parent = avatar
+
+                local nameLbl = Instance.new("TextLabel")
+                nameLbl.Size = UDim2.new(1, -85, 0, 15)
+                nameLbl.Position = UDim2.new(0, 36, 0, 3)
+                nameLbl.BackgroundTransparency = 1
+                nameLbl.Text = player.DisplayName
+                nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLbl.TextSize = 10
+                nameLbl.Font = Enum.Font.GothamBold
+                nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                nameLbl.ZIndex = 32
+                nameLbl.Parent = row
+
+                local userLbl = Instance.new("TextLabel")
+                userLbl.Size = UDim2.new(1, -85, 0, 13)
+                userLbl.Position = UDim2.new(0, 36, 0, 18)
+                userLbl.BackgroundTransparency = 1
+                userLbl.Text = "@" .. player.Name
+                userLbl.TextColor3 = Color3.fromRGB(130, 135, 160)
+                userLbl.TextSize = 8
+                userLbl.Font = Enum.Font.Gotham
+                userLbl.TextXAlignment = Enum.TextXAlignment.Left
+                userLbl.ZIndex = 32
+                userLbl.Parent = row
+
+                local statusBtn = Instance.new("TextButton")
+                statusBtn.Size = UDim2.new(0, 38, 0, 20)
+                statusBtn.Position = UDim2.new(1, -42, 0.5, -10)
+                statusBtn.Font = Enum.Font.GothamBold
+                statusBtn.TextSize = 9
+                statusBtn.ZIndex = 33
+                statusBtn.Parent = row
+
+                local indCorner = Instance.new("UICorner")
+                indCorner.CornerRadius = UDim.new(0, 4)
+                indCorner.Parent = statusBtn
+
+                if mode == "Hitbox" then
+                    local active = HitboxOverrides[player] ~= false
+                    statusBtn.Text = active and "ON" or "OFF"
+                    statusBtn.BackgroundColor3 = active and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 65)
+                    statusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+                    statusBtn.MouseButton1Click:Connect(function()
+                        HitboxOverrides[player] = not active
+                        refreshList()
+                        if player.Character then processCharacter(player, player.Character) end
+                    end)
+                elseif mode == "Esp" then
+                    local currentEsp = EspOverrides[player]
+                    if not currentEsp then
+                        local isEnemyDefault = false
+                        if LocalPlayer.Team ~= nil and player.Team ~= nil then
+                            isEnemyDefault = LocalPlayer.Team ~= player.Team
+                        elseif LocalPlayer.TeamColor ~= nil and player.TeamColor ~= nil then
+                            isEnemyDefault = LocalPlayer.TeamColor ~= player.TeamColor
+                        end
+                        currentEsp = isEnemyDefault and "Red" or "Green"
+                    end
+
+                    statusBtn.Text = currentEsp == "Red" and "RED" or "GRN"
+                    statusBtn.BackgroundColor3 = currentEsp == "Red" and Color3.fromRGB(230, 57, 70) or Color3.fromRGB(0, 200, 100)
+                    statusBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+                    statusBtn.MouseButton1Click:Connect(function()
+                        EspOverrides[player] = (currentEsp == "Red") and "Green" or "Red"
+                        refreshList()
+                        if player.Character then processCharacter(player, player.Character) end
+                    end)
+                end
+            end
+        end
+        panel.CanvasSize = UDim2.new(0, 0, 0, (count * 39) + 8)
+    end
+
+    table.insert(dropdownRefreshers, refreshList)
+    return panel, refreshList
+end
+
+local function createButtonWithDropdown(name, posY, zIndexVal, mode)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.86, 0, 0, 32)
+    btn.Position = UDim2.new(0.07, 0, posY, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+    btn.Text = name .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(160, 165, 185)
+    btn.TextSize = 11
+    btn.Font = Enum.Font.GothamBold
+    btn.ZIndex = zIndexVal
+    btn.Parent = ContentContainer
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+
+    attachFastHoverAndClick(btn)
+
+    local dropBtn = Instance.new("TextButton")
+    dropBtn.Size = UDim2.new(0, 30, 1, 0)
+    dropBtn.Position = UDim2.new(1, -30, 0, 0)
+    dropBtn.BackgroundTransparency = 1
+    dropBtn.Text = "▼"
+    dropBtn.TextColor3 = Color3.fromRGB(0, 230, 255)
+    dropBtn.TextSize = 10
+    dropBtn.Font = Enum.Font.GothamBold
+    dropBtn.ZIndex = zIndexVal + 1
+    dropBtn.Parent = btn
+
+    local dropdownPanel, refreshFunc = createPlayerDropdown(mode, btn)
+
+    dropBtn.MouseButton1Click:Connect(function()
+        if activeDropdown and activeDropdown ~= dropdownPanel then
+            activeDropdown.Visible = false
+        end
+        dropdownPanel.Visible = not dropdownPanel.Visible
+        activeDropdown = dropdownPanel.Visible and dropdownPanel or nil
+        dropBtn.Text = dropdownPanel.Visible and "▲" or "▼"
+        if dropdownPanel.Visible then refreshFunc() end
+    end)
+
+    return btn, dropdownPanel
+end
+
+local HitboxBtn, HitboxDropdown = createButtonWithDropdown("HITBOX", 0.28, 20, "Hitbox")
+local EspBtn, EspDropdown = createButtonWithDropdown("ESP", 0.44, 15, "Esp")
+
+local HeadBtn = Instance.new("TextButton")
+HeadBtn.Size = UDim2.new(0.86, 0, 0, 32)
+HeadBtn.Position = UDim2.new(0.07, 0, 0.60, 0)
+HeadBtn.BackgroundColor3 = Color3.fromRGB(22, 24, 34)
+HeadBtn.Text = "HIDE HEAD: OFF"
+HeadBtn.TextColor3 = Color3.fromRGB(160, 165, 185)
+HeadBtn.TextSize = 11
+HeadBtn.Font = Enum.Font.GothamBold
+HeadBtn.ZIndex = 12
+HeadBtn.Parent = ContentContainer
+
+local HeadBtnCorner = Instance.new("UICorner")
+HeadBtnCorner.CornerRadius = UDim.new(0, 8)
+HeadBtnCorner.Parent = HeadBtn
+attachFastHoverAndClick(HeadBtn)
+
+local VersionLabel = Instance.new("TextLabel")
+VersionLabel.Size = UDim2.new(1, 0, 0, 20)
+VersionLabel.Position = UDim2.new(0, 0, 0.88, 0)
+VersionLabel.BackgroundTransparency = 1
+VersionLabel.Text = "v2.7.0 // Ultra Fast Engine"
+VersionLabel.TextColor3 = Color3.fromRGB(90, 95, 120)
+VersionLabel.TextSize = 9
+VersionLabel.Font = Enum.Font.GothamSemibold
+VersionLabel.ZIndex = 12
+VersionLabel.Parent = ContentContainer
+
+local function triggerDropdownRefreshes()
+    for _, refresh in ipairs(dropdownRefreshers) do pcall(refresh) end
+end
+
+-- Border Animation
+task.spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        local t1 = TweenService:Create(FrameStroke, TweenInfo.new(2, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(0, 100, 255)})
+        t1:Play()
+        t1.Completed:Wait()
+        if not ScreenGui or not ScreenGui.Parent then break end
+        
+        local t2 = TweenService:Create(FrameStroke, TweenInfo.new(2, Enum.EasingStyle.Sine), {Color = Color3.fromRGB(0, 230, 255)})
+        t2:Play()
+        t2.Completed:Wait()
+        if not ScreenGui or not ScreenGui.Parent then break end
+    end
+end)
+
+-- Performance Tracker
+local frameCount = 0
+local lastCheck = tick()
+
+local renderConn = RunService.RenderStepped:Connect(function()
+    frameCount = frameCount + 1
+    local now = tick()
+    if now - lastCheck >= 1 then
+        local fps = math.floor(frameCount / (now - lastCheck))
+        local ping = 0
+        pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
+        PerformanceLabel.Text = string.format("FPS: %d | PING: %dms", fps, ping)
+
+        if fps >= 50 and ping < 100 then
+            PerformanceLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
+        elseif fps >= 30 and ping < 180 then
+            PerformanceLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+        else
+            PerformanceLabel.TextColor3 = Color3.fromRGB(255, 60, 60)
+        end
+
+        frameCount = 0
+        lastCheck = now
+    end
+end)
+table.insert(Connections, renderConn)
+
+-- Header Collapse
+Header.MouseButton1Click:Connect(function()
+    IsMinimized = not IsMinimized
+    MainFrame.Size = IsMinimized and UDim2.new(0, mainWidth, 0, 42) or UDim2.new(0, mainWidth, 0, mainHeight)
+    ContentContainer.Visible = not IsMinimized
+    if IsMinimized and activeDropdown then activeDropdown.Visible = false activeDropdown = nil end
+end)
+
+-- Window Toggle
+ToggleCircle.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    if not MainFrame.Visible and activeDropdown then
+        activeDropdown.Visible = false
+        activeDropdown = nil
+    end
+end)
+
+-- Team Check
+local function isEnemy(player)
+    if player == LocalPlayer then return false end
+    if EspOverrides[player] then return EspOverrides[player] == "Red" end
+
+    if LocalPlayer.Team ~= nil and player.Team ~= nil then return LocalPlayer.Team ~= player.Team end
+    if LocalPlayer.TeamColor ~= nil and player.TeamColor ~= nil then return LocalPlayer.TeamColor ~= player.TeamColor end
+
+    local lpTeam = LocalPlayer:FindFirstChild("Team") or (LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.leaderstats:FindFirstChild("Team"))
+    local pTeam = player:FindFirstChild("Team") or (player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Team"))
+    if lpTeam and pTeam and lpTeam.Value and pTeam.Value then return lpTeam.Value ~= pTeam.Value end
+
+    return false
+end
+
+-- Core Character Process Logic
+processCharacter = function(player, character)
+    if not character then return end
+
+    local head = character:FindFirstChild("Head") or character:WaitForChild("Head", 0.5)
+    local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 0.5)
+    local enemy = isEnemy(player)
+
+    if head then
+        if not head:GetAttribute("Head_OrigTrans") then head:SetAttribute("Head_OrigTrans", head.Transparency) end
+
+        if HideHeadEnabled then
+            head.Transparency = 1
+            for _, child in ipairs(head:GetChildren()) do
+                if child:IsA("Decal") or child:IsA("SpecialMesh") then
+                    if not child:GetAttribute("Decal_OrigTrans") then child:SetAttribute("Decal_OrigTrans", child.Transparency) end
+                    child.Transparency = 1
+                end
+            end
+        else
+            head.Transparency = head:GetAttribute("Head_OrigTrans") or 0
+            for _, child in ipairs(head:GetChildren()) do
+                if (child:IsA("Decal") or child:IsA("SpecialMesh")) and child:GetAttribute("Decal_OrigTrans") then
+                    child.Transparency = child:GetAttribute("Decal_OrigTrans")
+                end
+            end
+        end
+    end
+
+    if root then
+        if not root:GetAttribute("Root_OrigSize") then
+            root:SetAttribute("Root_OrigSize", root.Size)
+            root:SetAttribute("Root_OrigTrans", root.Transparency)
+            root:SetAttribute("Root_OrigColor", root.Color)
+            root:SetAttribute("Root_OrigMaterial", root.Material.Name)
+            root:SetAttribute("Root_OrigCanCollide", root.CanCollide)
+        end
+
+        local allowHitbox = HitboxEnabled
+        if HitboxOverrides[player] ~= nil then allowHitbox = HitboxEnabled and HitboxOverrides[player] end
+
+        if allowHitbox then
+            root.Size = Vector3.new(HitboxSize, HitboxSize, HitboxSize)
+            root.Transparency = 0.6
+            root.Color = Color3.fromRGB(0, 230, 255)
+            root.Material = Enum.Material.Neon
+            root.CanCollide = false
+        else
+            root.Size = root:GetAttribute("Root_OrigSize")
+            root.Transparency = root:GetAttribute("Root_OrigTrans")
+            root.Color = root:GetAttribute("Root_OrigColor")
+            local matName = root:GetAttribute("Root_OrigMaterial")
+            pcall(function() root.Material = Enum.Material[matName] or Enum.Material.SmoothPlastic end)
+            root.CanCollide = root:GetAttribute("Root_OrigCanCollide")
+        end
+    end
+
+    local highlight = character:FindFirstChild("ESPHighlight")
+    if EspEnabled then
+        if not highlight then
+            highlight = Instance.new("Highlight")
+            highlight.Name = "ESPHighlight"
+            highlight.Adornee = character
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+            highlight.Parent = character
+        else
+            highlight.Adornee = character
+        end
+
+        highlight.Enabled = true
+        local isRedColor = enemy
+        if EspOverrides[player] then isRedColor = (EspOverrides[player] == "Red") end
+
+        if isRedColor then
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 50, 50)
+        else
+            highlight.FillColor = Color3.fromRGB(0, 255, 120)
+            highlight.OutlineColor = Color3.fromRGB(50, 255, 150)
+        end
+    else
+        if highlight then highlight:Destroy() end
+    end
+end
+
+-- Direct Toggle Instant Triggers
+local function applyBatchUpdate()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            processCharacter(player, player.Character)
+        end
+    end
+    GlowDot.BackgroundColor3 = (HitboxEnabled or EspEnabled or HideHeadEnabled) and Color3.fromRGB(0, 255, 120) or Color3.fromRGB(0, 230, 255)
+end
+
+HitboxBtn.MouseButton1Click:Connect(function()
+    HitboxEnabled = not HitboxEnabled
+    HitboxBtn.Text = HitboxEnabled and "HITBOX: ACTIVE" or "HITBOX: OFF"
+    applyBatchUpdate()
+end)
+
+EspBtn.MouseButton1Click:Connect(function()
+    EspEnabled = not EspEnabled
+    EspBtn.Text = EspEnabled and "ESP: ACTIVE" or "ESP: OFF"
+    applyBatchUpdate()
+end)
+
+HeadBtn.MouseButton1Click:Connect(function()
+    HideHeadEnabled = not HideHeadEnabled
+    HeadBtn.Text = HideHeadEnabled and "HIDE HEAD: ACTIVE" or "HIDE HEAD: OFF"
+    applyBatchUpdate()
+end)
+
+SizeInput.FocusLost:Connect(function()
+    local val = tonumber(SizeInput.Text)
+    if val and val >= 1 and val <= 50 then
+        HitboxSize = val
+        if HitboxEnabled then applyBatchUpdate() end
+    else
+        SizeInput.Text = tostring(HitboxSize)
+    end
+end)
+
+-- Player Join & Respawn Hook
+local function setupPlayerListeners(player)
+    if player == LocalPlayer then return end
+    PlayerConns[player] = {}
+
+    local charConn = player.CharacterAdded:Connect(function(char)
+        local oldHighlight = char:FindFirstChild("ESPHighlight")
+        if oldHighlight then oldHighlight:Destroy() end
+
+        task.wait(0.3)
+        processCharacter(player, char)
+    end)
+    table.insert(PlayerConns[player], charConn)
+
+    if player.Character then processCharacter(player, player.Character) end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do setupPlayerListeners(player) end
+
+local pAddedConn = Players.PlayerAdded:Connect(function(player)
+    setupPlayerListeners(player)
+    triggerDropdownRefreshes()
+end)
+table.insert(Connections, pAddedConn)
+
+local pRemovingConn = Players.PlayerRemoving:Connect(function(player)
+    if PlayerConns[player] then
+        for _, conn in ipairs(PlayerConns[player]) do
+            if conn and conn.Connected then conn:Disconnect() end
+        end
+        PlayerConns[player] = nil
+    end
+    HitboxOverrides[player] = nil
+    EspOverrides[player] = nil
+    triggerDropdownRefreshes()
+end)
+table.insert(Connections, pRemovingConn)
+
+ScreenGui.Destroying:Connect(function()
+    for _, conn in ipairs(Connections) do
+        if conn and conn.Connected then conn:Disconnect() end
+    end
+    for player, conns in pairs(PlayerConns) do
+        for _, conn in ipairs(conns) do
+            if conn and conn.Connected then conn:Disconnect() end
+        end
+    end
+    table.clear(dropdownRefreshers)
+    table.clear(HitboxOverrides)
+    table.clear(EspOverrides)
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            local char = player.Character
+            local head = char:FindFirstChild("Head")
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local highlight = char:FindFirstChild("ESPHighlight")
+
+            if head then
+                head.Transparency = head:GetAttribute("Head_OrigTrans") or 0
+                for _, child in ipairs(head:GetChildren()) do
+                    if (child:IsA("Decal") or child:IsA("SpecialMesh")) and child:GetAttribute("Decal_OrigTrans") then
+                        child.Transparency = child:GetAttribute("Decal_OrigTrans")
+                    end
+                end
+            end
+
+            if root and root:GetAttribute("Root_OrigSize") then
+                root.Size = root:GetAttribute("Root_OrigSize")
+                root.Transparency = root:GetAttribute("Root_OrigTrans") or 1
+                root.Color = root:GetAttribute("Root_OrigColor") or Color3.fromRGB(163, 162, 165)
+                local matName = root:GetAttribute("Root_OrigMaterial")
+                pcall(function() root.Material = Enum.Material[matName] or Enum.Material.SmoothPlastic end)
+                root.CanCollide = root:GetAttribute("Root_OrigCanCollide") ~= false
+            end
+
+            if highlight then highlight:Destroy() end
+        end
+    end
+end)
+
+-- Main Loop Engine
+task.spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        if HitboxEnabled or EspEnabled or HideHeadEnabled then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    processCharacter(player, player.Character)
+                end
+            end
+            task.wait(0.1)
+        else
+            task.wait(0.4)
+        end
+    end
+end)

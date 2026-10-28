@@ -12,8 +12,8 @@ local Camera = workspace.CurrentCamera
 -- ================================================
 -- AUTO-CLEANUP PREVIOUS INSTANCES & ATTRIBUTES
 -- ================================================
-local GUI_NAME = "HitboxExpanderGui_v400"
-local CONFIG_FILE_NAME = "HitboxExpanderConfig_v4.json"
+local GUI_NAME = "HitboxExpanderGui_v434"
+local CONFIG_FILE_NAME = "HitboxExpanderConfig_v434.json"
 local CoreGui = pcall(function() return game:GetService("CoreGui") end) and game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
 
 local Connections = {}
@@ -50,6 +50,7 @@ local HitboxEnabled = false
 local EspEnabled = false
 local HideHeadEnabled = false
 local AimLockEnabled = false
+local WallCheckerEnabled = false
 local FovCircleEnabled = false
 local TargetEveryone = false
 local TracersEnabled = false
@@ -66,7 +67,7 @@ local CurrentLanguage = "EN"
 local HeaderShowClock = false
 local UserParticlesEnabled = true
 local ActualParticlesEnabled = true
-local CurrentTheme = "Purple" -- Purple set as primary default
+local CurrentTheme = "Purple"
 local CurrentScale = 1.0
 local ToggleKeybind = Enum.KeyCode.RightShift
 
@@ -86,11 +87,12 @@ local updateThemeAccents
 local saveConfiguration
 local loadConfiguration
 
--- Multi-language Dictionary
+-- Multi-language Dictionary (Main Tab & Halloween Edition)
 local Translations = {
     EN = {
-        Title = "HITBOX EXPANDER v4.0",
-        SubTitle = "created by renko // purple ultimate edition",
+        Title = "HITBOX EXPANDER v4.3.4",
+        SubTitle = "created by renko // halloween edition",
+        TabMain = "Main",
         TabCombat = "Combat",
         TabVisuals = "Visuals",
         TabPlayers = "Players",
@@ -99,6 +101,7 @@ local Translations = {
         HitboxToggle = "ENABLE HITBOX EXPANDER",
         HitboxSizeLabel = "HITBOX SIZE (1 - 120)",
         AimLockToggle = "ENABLE AIMLOCK (SMOOTH)",
+        WallCheckerToggle = "ENABLE WALL CHECKER (NO WALLS)",
         FovToggle = "ENABLE FOV CIRCLE",
         TeamCheckToggle = "TARGET EVERYONE (IGNORE TEAM)",
         EspToggle = "ENABLE ESP HIGHLIGHT",
@@ -118,7 +121,7 @@ local Translations = {
         StatusLag = "Low Performance / Lag",
         ClockToggle = "SHOW LIVE CLOCK IN HEADER",
         ParticlesToggle = "ANIMATED PARTICLES",
-        LanguageLabel = "LANGUAGE / اللغة / LANGUE",
+        LanguageLabel = "LANGUAGE / LANG / IDIOMA",
         ThemeLabel = "UI THEME (Purple / Cyan / Red)",
         ScaleLabel = "UI SCALE (0.8x - 1.2x)",
         KeybindLabel = "TOGGLE KEYBIND (Press RightShift)",
@@ -139,11 +142,20 @@ local Translations = {
         JoinTime = "Join Time",
         CopyName = "Copy Username",
         CopyDisplay = "Copy Display",
-        Copied = "Copied!"
+        Copied = "Copied!",
+        MainWelcome = "Hello, ",
+        MainUsername = "Username: ",
+        MainDisplay = "Display Name: ",
+        MainUserId = "Profile ID: ",
+        MainAccountAge = "Account Age: ",
+        MainGameInfo = "Game: ",
+        MainPlaceId = "Place ID: ",
+        HalloweenBanner = "🎃 Spooky Halloween Mode Active 👻"
     },
     AR = {
-        Title = "مكبر منطقة الاصطدام v4.0",
-        SubTitle = "تطوير بواسطة رينكو // النسخة البنفسجية المتكاملة",
+        Title = "مكبر منطقة الاصطدام v4.3.4",
+        SubTitle = "تطوير بواسطة رينكو // نسخة الهالوين",
+        TabMain = "الرئيسية",
         TabCombat = "القِتال",
         TabVisuals = "البصريات",
         TabPlayers = "اللاعبين",
@@ -152,6 +164,7 @@ local Translations = {
         HitboxToggle = "تفعيل مكبر الهيت بوكس",
         HitboxSizeLabel = "حجم الهيت بوكس (1 - 120)",
         AimLockToggle = "تفعيل مساعد التصويب السلس (AimLock)",
+        WallCheckerToggle = "تفعيل فاحص الجدران (عدم التصويب خلف الجدار)",
         FovToggle = "تفعيل دائرة مجال الرؤية (FOV)",
         TeamCheckToggle = "استهداف الجميع (تجاهل الفرق)",
         EspToggle = "تفعيل كاشف اللاعبين (ESP)",
@@ -192,11 +205,20 @@ local Translations = {
         JoinTime = "وقت الدخول",
         CopyName = "نسخ اسم المستخدم",
         CopyDisplay = "نسخ اسم العرض",
-        Copied = "تم النسخ!"
+        Copied = "تم النسخ!",
+        MainWelcome = "مرحباً، ",
+        MainUsername = "اسم المستخدم: ",
+        MainDisplay = "اسم العرض: ",
+        MainUserId = "معرف الحساب (ID): ",
+        MainAccountAge = "عمر الحساب: ",
+        MainGameInfo = "اللعبة الحالية: ",
+        MainPlaceId = "معرف اللعبة (Place ID): ",
+        HalloweenBanner = "🎃 وضع الهالوين المرعب مفعل 👻"
     },
     FR = {
-        Title = "HITBOX EXPANDER v4.0",
-        SubTitle = "créé par renko // édition violette ultime",
+        Title = "HITBOX EXPANDER v4.3.4",
+        SubTitle = "créé par renko // édition halloween",
+        TabMain = "Principal",
         TabCombat = "Combat",
         TabVisuals = "Visuels",
         TabPlayers = "Joueurs",
@@ -205,6 +227,7 @@ local Translations = {
         HitboxToggle = "ACTIVER HITBOX EXPANDER",
         HitboxSizeLabel = "TAILLE DU HITBOX (1 - 120)",
         AimLockToggle = "ACTIVER AIMLOCK (DOUX)",
+        WallCheckerToggle = "ACTIVER VÉRIFICATEUR DE MUR",
         FovToggle = "ACTIVER CERCLE FOV",
         TeamCheckToggle = "CIBLER TOUT LE MONDE",
         EspToggle = "ACTIVER ESP HIGHLIGHT",
@@ -224,7 +247,7 @@ local Translations = {
         StatusLag = "Basse Performance / Lag",
         ClockToggle = "AFFICHER L'HORLOGE DANS L'EN-TÊTE",
         ParticlesToggle = "PARTICULES ANIMÉES",
-        LanguageLabel = "LANGUE / LANGUAGE / اللغة",
+        LanguageLabel = "LANGUE / LANGUAGE / IDIOMA",
         ThemeLabel = "THÈME UI (Violet / Cyan / Rouge)",
         ScaleLabel = "ÉCHELLE UI (0.8x - 1.2x)",
         KeybindLabel = "RACCOURCI (Appuyez sur RightShift)",
@@ -234,7 +257,7 @@ local Translations = {
         ProfileTitle = "PROFIL DE JOUEUR AMÉLIORÉ",
         CloseBtn = "Fermer",
         LockPlayer = "VERROUILLER CE JOUEUR",
-        TeleportPlayer = "S'IL TE PLAÎT TÉLÉPORTER",
+        TeleportPlayer = "TÉLÉPORTER AU JOUEUR",
         Alive = "Vivant",
         Dead = "Mort",
         Team = "Équipe",
@@ -245,7 +268,204 @@ local Translations = {
         JoinTime = "Heure de connexion",
         CopyName = "Copier le pseudo",
         CopyDisplay = "Copier l'affichage",
-        Copied = "Copié!"
+        Copied = "Copié!",
+        MainWelcome = "Bonjour, ",
+        MainUsername = "Nom d'utilisateur: ",
+        MainDisplay = "Nom d'affichage: ",
+        MainUserId = "ID du profil: ",
+        MainAccountAge = "Âge du compte: ",
+        MainGameInfo = "Jeu: ",
+        MainPlaceId = "Place ID: ",
+        HalloweenBanner = "🎃 Mode Halloween Effrayant Actif 👻"
+    },
+    ES = {
+        Title = "HITBOX EXPANDER v4.3.4",
+        SubTitle = "creado por renko // edición halloween",
+        TabMain = "Principal",
+        TabCombat = "Combate",
+        TabVisuals = "Visuales",
+        TabPlayers = "Jugadores",
+        TabStatus = "Estado",
+        TabSettings = "Ajustes",
+        HitboxToggle = "ACTIVAR HITBOX EXPANDER",
+        HitboxSizeLabel = "TAMAÑO DE HITBOX (1 - 120)",
+        AimLockToggle = "ACTIVAR AIMLOCK (SUAVE)",
+        WallCheckerToggle = "ACTIVAR VERIFICADOR DE PARED",
+        FovToggle = "ACTIVAR CÍRCULO FOV",
+        TeamCheckToggle = "ATACAR A TODOS",
+        EspToggle = "ACTIVAR ESP HIGHLIGHT",
+        HeadToggle = "OCULTAR CABEZA",
+        TracersToggle = "ACTIVAR RASTREADORES",
+        ChamsToggle = "ACTIVAR MATERIAL CHAMS",
+        FullbrightToggle = "ACTIVAR LUZ TOTAL",
+        FilterEnemiesOnly = "FILTRO: SOLO ENEMIGOS",
+        SearchPlaceholder = "Buscar jugador...",
+        NoPlayersFound = "No se encontraron jugadores",
+        ClearSearch = "Limpiar búsqueda",
+        RefreshList = "Actualizar lista",
+        PerfDashboard = "MONITOR DE RENDIMIENTO",
+        StatusInitializing = "Estado: Inicializando...",
+        StatusExcellent = "Buen Rendimiento",
+        StatusModerate = "Rendimiento Moderado",
+        StatusLag = "Bajo Rendimiento / Lag",
+        ClockToggle = "MOSTRAR HORA EN ENCABEZADO",
+        ParticlesToggle = "PARTÍCULAS ANIMADAS",
+        LanguageLabel = "IDIOMA / LANGUAGE / LANGUE",
+        ThemeLabel = "TEMA UI (Morado / cian / Rojo)",
+        ScaleLabel = "ESCALA UI (0.8x - 1.2x)",
+        KeybindLabel = "TECLA DE ACCESO (RightShift)",
+        ResetBtn = "RESTABLECER AJUSTES",
+        FpsBoostBtn = "MEJORAR FPS / LIMPIAR MEMORIA",
+        LockUiBtn = "BLOQUEAR POSICIÓN UI",
+        ProfileTitle = "PERFIL DE JUGADOR",
+        CloseBtn = "Cerrar",
+        LockPlayer = "BLOQUEAR MIRA A JUGADOR",
+        TeleportPlayer = "TELETRANSPORTAR",
+        Alive = "Vivo",
+        Dead = "Muerto",
+        Team = "Equipo",
+        Dist = "Dist",
+        FriendYes = "Amigo: Sí",
+        FriendNo = "Amigo: No",
+        AccAge = "Edad de cuenta",
+        JoinTime = "Hora de entrada",
+        CopyName = "Copiar Usuario",
+        CopyDisplay = "Copiar Mostrar",
+        Copied = "¡Copiado!",
+        MainWelcome = "Hola, ",
+        MainUsername = "Usuario: ",
+        MainDisplay = "Nombre visible: ",
+        MainUserId = "ID de perfil: ",
+        MainAccountAge = "Edad de cuenta: ",
+        MainGameInfo = "Juego: ",
+        MainPlaceId = "Place ID: ",
+        HalloweenBanner = "🎃 Modo Halloween Activo 👻"
+    },
+    RU = {
+        Title = "HITBOX EXPANDER v4.3.4",
+        SubTitle = "создано renko // хэллоуин",
+        TabMain = "Главная",
+        TabCombat = "Бой",
+        TabVisuals = "Визуал",
+        TabPlayers = "Игроки",
+        TabStatus = "Статус",
+        TabSettings = "Настройки",
+        HitboxToggle = "ВКЛЮЧИТЬ ХИТБОКСЫ",
+        HitboxSizeLabel = "РАЗМЕР ХИТБОКСА (1 - 120)",
+        AimLockToggle = "ВКЛЮЧИТЬ AIMLOCK",
+        WallCheckerToggle = "ПРОВЕРКА СТЕН (БЕЗ СТЕН)",
+        FovToggle = "ВКЛЮЧИТЬ КРУГ FOV",
+        TeamCheckToggle = "ЦЕЛЬ ВСЕХ (ИГНОРИРОВАТЬ КОМАНДУ)",
+        EspToggle = "ВКЛЮЧИТЬ ESP ПОДСВЕТКУ",
+        HeadToggle = "СКРЫТЬ ГОЛОВУ",
+        TracersToggle = "ВКЛЮЧИТЬ ЛИНИИ (ТРЕЙСЕРЫ)",
+        ChamsToggle = "ВКЛЮЧИТЬ МАТЕРИАЛ CHAMS",
+        FullbrightToggle = "ПОЛНОЕ ОСВЕЩЕНИЕ",
+        FilterEnemiesToggle = "ФИЛЬТР: ТОЛЬКО ВРАГИ",
+        SearchPlaceholder = "Поиск игрока...",
+        NoPlayersFound = "Игроки не найдены",
+        ClearSearch = "Очистить",
+        RefreshList = "Обновить список",
+        PerfDashboard = "МОНИТОР ПРОИЗВОДИТЕЛЬНОСТИ",
+        StatusInitializing = "Статус: Инициализация...",
+        StatusExcellent = "Хорошая производительность",
+        StatusModerate = "Средняя производительность",
+        StatusLag = "Низкая производительность / Лаги",
+        ClockToggle = "ПОКАЗЫВАТЬ ЧАСЫ В ШАПКЕ",
+        ParticlesToggle = "АНИМИРОВАННЫЕ ЧАСТИЦЫ",
+        LanguageLabel = "ЯЗЫК / LANGUAGE / IDIOMA",
+        ThemeLabel = "ТЕМА (Фиолетовый / Циан / Красный)",
+        ScaleLabel = "МАСШТАБ UI (0.8x - 1.2x)",
+        KeybindLabel = "КЛАВИША (RightShift)",
+        ResetBtn = "СБРОСИТЬ НАСТРОЙКИ",
+        FpsBoostBtn = "УСКОРИТЬ FPS / ОЧИСТИТЬ ПАМЯТЬ",
+        LockUiBtn = "ЗАБЛОКИРОВАТЬ ПОЗИЦИЮ UI",
+        ProfileTitle = "ПРОФИЛЬ ИГРОКА",
+        CloseBtn = "Закрыть",
+        LockPlayer = "ЗАЛОКИРОВАТЬ ПРИЦЕЛ",
+        TeleportPlayer = "ТЕЛЕПОРТИРОВАТЬСЯ",
+        Alive = "Жив",
+        Dead = "Мертв",
+        Team = "Команда",
+        Dist = "Раст",
+        FriendYes = "Друг: Да",
+        FriendNo = "Друг: Нет",
+        AccAge = "Возраст аккаунта",
+        JoinTime = "Время входа",
+        CopyName = "Копировать юзернейм",
+        CopyDisplay = "Копировать имя",
+        Copied = "Скопировано!",
+        MainWelcome = "Привет, ",
+        MainUsername = "Имя пользователя: ",
+        MainDisplay = "Отображаемое имя: ",
+        MainUserId = "ID профиля: ",
+        MainAccountAge = "Возраст аккаунта: ",
+        MainGameInfo = "Игра: ",
+        MainPlaceId = "Place ID: ",
+        HalloweenBanner = "🎃 Режим Хэллоуина Активен 👻"
+    },
+    PT = {
+        Title = "HITBOX EXPANDER v4.3.4",
+        SubTitle = "criado por renko // edição halloween",
+        TabMain = "Principal",
+        TabCombat = "Combate",
+        TabVisuals = "Visuais",
+        TabPlayers = "Jogadores",
+        TabStatus = "Status",
+        TabSettings = "Configurações",
+        HitboxToggle = "ATIVAR HITBOX EXPANDER",
+        HitboxSizeLabel = "TAMANHO DO HITBOX (1 - 120)",
+        AimLockToggle = "ATIVAR AIMLOCK (SUAVE)",
+        WallCheckerToggle = "ATIVAR VERIFICADOR DE PAREDE",
+        FovToggle = "ATIVAR CÍRCULO FOV",
+        TeamCheckToggle = "ALVO EM TODOS (IGNORAR TIME)",
+        EspToggle = "ATIVAR ESP DESTAQUE",
+        HeadToggle = "OCULTAR CABEÇA (TRANSPARENTE)",
+        TracersToggle = "ATIVAR RASTREADORES (LINHAS)",
+        ChamsToggle = "ATIVAR MATERIAL CHAMS NEON",
+        FullbrightToggle = "ATIVAR LUZ TOTAL (SEM ESCURIDÃO)",
+        FilterEnemiesToggle = "FILTRO: APENAS INIMIGOS",
+        SearchPlaceholder = "Procurar jogador...",
+        NoPlayersFound = "Nenhum jogador encontrado",
+        ClearSearch = "Limpar busca",
+        RefreshList = "Atualizar lista",
+        PerfDashboard = "MONITOR DE DESEMPENHO",
+        StatusInitializing = "Status: Inicializando...",
+        StatusExcellent = "Bom Desempenho",
+        StatusModerate = "Desempenho Moderado",
+        StatusLag = "Baixo Desempenho / Lag",
+        ClockToggle = "MOSTRAR RELÓGIO NO CABEÇALHO",
+        ParticlesToggle = "PARTÍCULAS ANIMADAS",
+        LanguageLabel = "IDIOMA / LANGUAGE / LANGUE",
+        ThemeLabel = "TEMA UI (Roxo / Ciano / Vermelho)",
+        ScaleLabel = "ESCALA DA UI (0.8x - 1.2x)",
+        KeybindLabel = "TECLA DE ATALHO (RightShift)",
+        ResetBtn = "REDEFINIR CONFIGURAÇÕES",
+        FpsBoostBtn = "MELHORAR FPS / LIMPAR MEMÓRIA",
+        LockUiBtn = "BLOQUEAR POSIÇÃO DA UI",
+        ProfileTitle = "PERFIL DO JOGADOR",
+        CloseBtn = "Fechar",
+        LockPlayer = "FIXAR MIRA NO JOGADOR",
+        TeleportPlayer = "TELETRANSPORTAR",
+        Alive = "Vivo",
+        Dead = "Morto",
+        Team = "Time",
+        Dist = "Dist",
+        FriendYes = "Amigo: Sim",
+        FriendNo = "Amigo: Não",
+        AccAge = "Idade da Conta",
+        JoinTime = "Tempo de Entrada",
+        CopyName = "Copiar Usuário",
+        CopyDisplay = "Copiar Apelido",
+        Copied = "Copiado!",
+        MainWelcome = "Olá, ",
+        MainUsername = "Usuário: ",
+        MainDisplay = "Nome de Exibição: ",
+        MainUserId = "ID do Perfil: ",
+        MainAccountAge = "Idade da Conta: ",
+        MainGameInfo = "Jogo: ",
+        MainPlaceId = "Place ID: ",
+        HalloweenBanner = "🎃 Modo Halloween Ativo 👻"
     }
 }
 
@@ -346,7 +566,7 @@ ToggleCircle.Size = UDim2.new(0, 50, 0, 50)
 ToggleCircle.Position = UDim2.new(0.92, 0, 0.45, 0)
 ToggleCircle.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 ToggleCircle.BackgroundTransparency = 0.15
-ToggleCircle.Text = "🎯"
+ToggleCircle.Text = "🎃"
 ToggleCircle.TextSize = 20
 ToggleCircle.Active = true
 ToggleCircle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -359,7 +579,7 @@ CircleCorner.Parent = ToggleCircle
 
 local CircleStroke = Instance.new("UIStroke")
 CircleStroke.Thickness = 2
-CircleStroke.Color = getThemeColor()
+CircleStroke.Color = Color3.fromRGB(255, 120, 0) -- Halloween orange glow
 CircleStroke.Parent = ToggleCircle
 
 enableCustomDrag(ToggleCircle)
@@ -548,7 +768,6 @@ local LockTargetCorner = Instance.new("UICorner")
 LockTargetCorner.CornerRadius = UDim.new(0, 6)
 LockTargetCorner.Parent = LockTargetBtn
 
--- Teleport Button Feature
 local TpBtn = Instance.new("TextButton")
 TpBtn.Size = UDim2.new(1, -24, 0, 28)
 TpBtn.Position = UDim2.new(0, 12, 0, 244)
@@ -740,7 +959,7 @@ for i = 1, 8 do
     local p = Instance.new("Frame")
     p.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
     p.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    p.BackgroundColor3 = getThemeColor()
+    p.BackgroundColor3 = Color3.fromRGB(255, 120, 0) -- Halloween particle orange
     p.BackgroundTransparency = 0.4
     p.BorderSizePixel = 0
     p.ZIndex = 10
@@ -767,7 +986,7 @@ for i = 1, 8 do
     end)
 end
 
--- Header Bar
+-- Header Bar (Cleaned completely from avatar)
 local Header = Instance.new("TextButton")
 Header.Name = "Header"
 Header.Size = UDim2.new(1, 0, 0, 45)
@@ -814,7 +1033,7 @@ SubTitle.Size = UDim2.new(0.5, 0, 0.4, 0)
 SubTitle.Position = UDim2.new(0, 32, 0, 22)
 SubTitle.BackgroundTransparency = 1
 SubTitle.Text = getText("SubTitle")
-SubTitle.TextColor3 = getThemeColor()
+SubTitle.TextColor3 = Color3.fromRGB(255, 140, 0) -- Halloween vibe
 SubTitle.TextSize = 8.5
 SubTitle.Font = Enum.Font.GothamSemibold
 SubTitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -859,14 +1078,14 @@ MinCorner.CornerRadius = UDim.new(0, 6)
 MinCorner.Parent = MinBtn
 
 -- ================================================
--- TABS SYSTEM (5 Tabs with Scrolling Tab Bar)
+-- TABS SYSTEM (Main Tab is first and default)
 -- ================================================
 local TabBar = Instance.new("ScrollingFrame")
 TabBar.Size = UDim2.new(1, -20, 0, 32)
 TabBar.Position = UDim2.new(0, 10, 0, 52)
 TabBar.BackgroundTransparency = 1
 TabBar.BorderSizePixel = 0
-TabBar.CanvasSize = UDim2.new(0, 380, 0, 0)
+TabBar.CanvasSize = UDim2.new(0, 520, 0, 0)
 TabBar.ScrollBarThickness = 0
 TabBar.ZIndex = 12
 TabBar.Parent = MainFrame
@@ -888,16 +1107,16 @@ PagesContainer.Parent = MainFrame
 local tabs = {}
 local pages = {}
 local translatableLabels = {}
-local activeTabName = "Combat"
+local activeTabName = "Main" -- Set Main as default active tab
 
-local function createPage(name)
+local function createPage(name, isScrollable)
     local page = Instance.new("ScrollingFrame")
     page.Name = name .. "Page"
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
     page.Visible = (name == activeTabName)
-    page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    page.CanvasSize = isScrollable and UDim2.new(0, 0, 2, 0) or UDim2.new(0, 0, 0, 0)
     page.ScrollingEnabled = true
     page.ScrollBarThickness = 3
     page.ScrollBarImageColor3 = getThemeColor()
@@ -943,9 +1162,9 @@ local function switchTab(name)
     end
 end
 
-local function createTabButton(name, key, order)
+local function createTabButton(name, key, order, isScrollable)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 72, 1, 0)
+    btn.Size = UDim2.new(0, 68, 1, 0)
     btn.BackgroundColor3 = (name == activeTabName) and getThemeColor() or Color3.fromRGB(20, 22, 32)
     btn.BackgroundTransparency = (name == activeTabName) and 0.2 or 0.4
     btn.Text = getText(key)
@@ -972,14 +1191,16 @@ local function createTabButton(name, key, order)
 
     tabs[name] = btn
     table.insert(translatableLabels, {Object = btn, Key = key})
-    createPage(name)
+    createPage(name, isScrollable)
 end
 
-createTabButton("Combat", "TabCombat", 1)
-createTabButton("Visuals", "TabVisuals", 2)
-createTabButton("Players", "TabPlayers", 3)
-createTabButton("Status", "TabStatus", 4)
-createTabButton("Settings", "TabSettings", 5)
+-- Order tabs: Main is first
+createTabButton("Main", "TabMain", 1, true)
+createTabButton("Combat", "TabCombat", 2, true)
+createTabButton("Visuals", "TabVisuals", 3, true)
+createTabButton("Players", "TabPlayers", 4, false)
+createTabButton("Status", "TabStatus", 5, false)
+createTabButton("Settings", "TabSettings", 6, true)
 
 local function updateLayoutAlignment()
     local isRTL = (CurrentLanguage == "AR")
@@ -1091,6 +1312,101 @@ end
 -- POPULATE PAGES
 -- ================================================
 
+-- 0. Main Page (Contains Halloween Theme, User & Game Profile Details)
+local mainPage = pages["Main"]
+
+-- Halloween Banner / Decoration Container
+local halloweenBanner = Instance.new("Frame")
+halloweenBanner.Size = UDim2.new(1, 0, 0, 32)
+halloweenBanner.BackgroundColor3 = Color3.fromRGB(255, 110, 0)
+halloweenBanner.BackgroundTransparency = 0.25
+halloweenBanner.BorderSizePixel = 0
+halloweenBanner.ZIndex = 14
+halloweenBanner.Parent = mainPage
+
+local hbCorner = Instance.new("UICorner")
+hbCorner.CornerRadius = UDim.new(0, 8)
+hbCorner.Parent = halloweenBanner
+
+local hbText = Instance.new("TextLabel")
+hbText.Size = UDim2.new(1, 0, 1, 0)
+hbText.BackgroundTransparency = 1
+hbText.Text = getText("HalloweenBanner")
+hbText.TextColor3 = Color3.fromRGB(255, 255, 255)
+hbText.TextSize = 10
+hbText.Font = Enum.Font.GothamBold
+hbText.ZIndex = 15
+hbText.Parent = halloweenBanner
+table.insert(translatableLabels, {Object = hbText, Key = "HalloweenBanner"})
+
+-- Main Profile & Game Card
+local mainCard = Instance.new("Frame")
+mainCard.Size = UDim2.new(1, 0, 0, 180)
+mainCard.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
+mainCard.BackgroundTransparency = 0.2
+mainCard.BorderSizePixel = 0
+mainCard.ZIndex = 14
+mainCard.Parent = mainPage
+
+local mainCardCorner = Instance.new("UICorner")
+mainCardCorner.CornerRadius = UDim.new(0, 10)
+mainCardCorner.Parent = mainCard
+
+local mainCardStroke = Instance.new("UIStroke")
+mainCardStroke.Thickness = 1.2
+mainCardStroke.Color = Color3.fromRGB(255, 140, 0) -- Halloween Orange accent
+mainCardStroke.Parent = mainCard
+
+local mainAvatar = Instance.new("ImageLabel")
+mainAvatar.Size = UDim2.new(0, 50, 0, 50)
+mainAvatar.Position = UDim2.new(0, 12, 0, 12)
+mainAvatar.BackgroundTransparency = 1
+mainAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
+mainAvatar.ZIndex = 15
+mainAvatar.Parent = mainCard
+
+local mainAvatarCorner = Instance.new("UICorner")
+mainAvatarCorner.CornerRadius = UDim.new(1, 0)
+mainAvatarCorner.Parent = mainAvatar
+
+local mainWelcomeLabel = Instance.new("TextLabel")
+mainWelcomeLabel.Size = UDim2.new(1, -74, 0, 22)
+mainWelcomeLabel.Position = UDim2.new(0, 70, 0, 12)
+mainWelcomeLabel.BackgroundTransparency = 1
+mainWelcomeLabel.Text = getText("MainWelcome") .. LocalPlayer.DisplayName .. "!"
+mainWelcomeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+mainWelcomeLabel.TextSize = 11
+mainWelcomeLabel.Font = Enum.Font.GothamBold
+mainWelcomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+mainWelcomeLabel.ZIndex = 15
+mainWelcomeLabel.Parent = mainCard
+
+local gameNameStr = "Roblox Game"
+pcall(function()
+    gameNameStr = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+end)
+
+local mainInfoDetails = Instance.new("TextLabel")
+mainInfoDetails.Size = UDim2.new(1, -24, 0, 100)
+mainInfoDetails.Position = UDim2.new(0, 12, 0, 70)
+mainInfoDetails.BackgroundTransparency = 1
+mainInfoDetails.Text = string.format(
+    "%s@%s\n%s%s\n%s%d\n%s%d days\n%s%s\n%s%d",
+    getText("MainUsername"), LocalPlayer.Name,
+    getText("MainDisplay"), LocalPlayer.DisplayName,
+    getText("MainUserId"), LocalPlayer.UserId,
+    getText("MainAccountAge"), LocalPlayer.AccountAge or 0,
+    getText("MainGameInfo"), gameNameStr,
+    getText("MainPlaceId"), game.PlaceId
+)
+mainInfoDetails.TextColor3 = Color3.fromRGB(200, 205, 230)
+mainInfoDetails.TextSize = 9
+mainInfoDetails.Font = Enum.Font.GothamSemibold
+mainInfoDetails.TextXAlignment = Enum.TextXAlignment.Left
+mainInfoDetails.TextYAlignment = Enum.TextYAlignment.Top
+mainInfoDetails.ZIndex = 15
+mainInfoDetails.Parent = mainCard
+
 -- 1. Combat Page
 local combatPage = pages["Combat"]
 createToggleSwitch(combatPage, "HitboxToggle", HitboxEnabled, function(state)
@@ -1100,6 +1416,10 @@ end)
 
 createToggleSwitch(combatPage, "AimLockToggle", AimLockEnabled, function(state)
     AimLockEnabled = state
+end)
+
+createToggleSwitch(combatPage, "WallCheckerToggle", WallCheckerEnabled, function(state)
+    WallCheckerEnabled = state
 end)
 
 createToggleSwitch(combatPage, "FovToggle", FovCircleEnabled, function(state)
@@ -1165,7 +1485,7 @@ local focusLostConn = SizeInput.FocusLost:Connect(function()
 end)
 table.insert(Connections, focusLostConn)
 
--- 2. Visuals Page (Tracers, Chams, Fullbright Added)
+-- 2. Visuals Page
 local visualsPage = pages["Visuals"]
 createToggleSwitch(visualsPage, "EspToggle", EspEnabled, function(state)
     EspEnabled = state
@@ -1433,7 +1753,7 @@ local refreshClickConn = refreshBtn.MouseButton1Click:Connect(function()
 end)
 table.insert(Connections, refreshClickConn)
 
--- 4. Status / Performance Monitor Page
+-- 4. Status Page (Toggles for Clock & Particles as requested)
 local statusPage = pages["Status"]
 
 local perfCard = Instance.new("Frame")
@@ -1486,28 +1806,33 @@ createToggleSwitch(statusPage, "ParticlesToggle", UserParticlesEnabled, function
     ActualParticlesEnabled = state
 end)
 
--- 5. Settings Page (With Config Save/Load & Memory Cleaner & UI Lock)
+-- 5. Settings Page (Cleaned up buttons without glaring white lines)
 local settingsPage = pages["Settings"]
 
 local themeContainer = Instance.new("Frame")
-themeContainer.Size = UDim2.new(1, 0, 0, 52)
-themeContainer.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
-themeContainer.BackgroundTransparency = 0.3
+themeContainer.Size = UDim2.new(1, 0, 0, 56)
+themeContainer.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
+themeContainer.BackgroundTransparency = 0.2
 themeContainer.BorderSizePixel = 0
 themeContainer.ZIndex = 14
 themeContainer.Parent = settingsPage
 
 local themeCorner = Instance.new("UICorner")
-themeCorner.CornerRadius = UDim.new(0, 8)
+themeCorner.CornerRadius = UDim.new(0, 10)
 themeCorner.Parent = themeContainer
+
+local themeStroke = Instance.new("UIStroke")
+themeStroke.Thickness = 1
+themeStroke.Color = Color3.fromRGB(45, 50, 75)
+themeStroke.Parent = themeContainer
 
 local themeLbl = Instance.new("TextLabel")
 themeLbl.Size = UDim2.new(1, -20, 0, 18)
-themeLbl.Position = UDim2.new(0, 12, 0, 4)
+themeLbl.Position = UDim2.new(0, 12, 0, 5)
 themeLbl.BackgroundTransparency = 1
 themeLbl.Text = getText("ThemeLabel")
-themeLbl.TextColor3 = Color3.fromRGB(200, 205, 230)
-themeLbl.TextSize = 9
+themeLbl.TextColor3 = Color3.fromRGB(220, 225, 245)
+themeLbl.TextSize = 9.5
 themeLbl.Font = Enum.Font.GothamBold
 themeLbl.TextXAlignment = Enum.TextXAlignment.Left
 themeLbl.ZIndex = 15
@@ -1516,19 +1841,25 @@ table.insert(translatableLabels, {Object = themeLbl, Key = "ThemeLabel"})
 
 local function createThemeBtn(themeName, posX, color)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 55, 0, 20)
-    btn.Position = UDim2.new(0, posX, 0, 24)
+    btn.Size = UDim2.new(0, 60, 0, 22)
+    btn.Position = UDim2.new(0, posX, 0, 26)
     btn.BackgroundColor3 = color
+    btn.BackgroundTransparency = (CurrentTheme == themeName) and 0.1 or 0.4
     btn.Text = themeName
-    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-    btn.TextSize = 9
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 9.5
     btn.Font = Enum.Font.GothamBold
     btn.ZIndex = 16
     btn.Parent = themeContainer
 
     local bCorner = Instance.new("UICorner")
-    bCorner.CornerRadius = UDim.new(0, 4)
+    bCorner.CornerRadius = UDim.new(0, 6)
     bCorner.Parent = btn
+
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Thickness = (CurrentTheme == themeName) and 1.2 or 0.5
+    bStroke.Color = Color3.fromRGB(100, 100, 120)
+    bStroke.Parent = btn
 
     local conn = btn.MouseButton1Click:Connect(function()
         CurrentTheme = themeName
@@ -1539,28 +1870,33 @@ local function createThemeBtn(themeName, posX, color)
 end
 
 createThemeBtn("Purple", 12, ThemeColors.Purple)
-createThemeBtn("Cyan", 72, ThemeColors.Cyan)
-createThemeBtn("Red", 132, ThemeColors.Red)
+createThemeBtn("Cyan", 78, ThemeColors.Cyan)
+createThemeBtn("Red", 144, ThemeColors.Red)
 
 local scaleContainer = Instance.new("Frame")
-scaleContainer.Size = UDim2.new(1, 0, 0, 52)
-scaleContainer.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
-scaleContainer.BackgroundTransparency = 0.3
+scaleContainer.Size = UDim2.new(1, 0, 0, 56)
+scaleContainer.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
+scaleContainer.BackgroundTransparency = 0.2
 scaleContainer.BorderSizePixel = 0
 scaleContainer.ZIndex = 14
 scaleContainer.Parent = settingsPage
 
 local scaleCorner = Instance.new("UICorner")
-scaleCorner.CornerRadius = UDim.new(0, 8)
+scaleCorner.CornerRadius = UDim.new(0, 10)
 scaleCorner.Parent = scaleContainer
+
+local scaleStroke = Instance.new("UIStroke")
+scaleStroke.Thickness = 1
+scaleStroke.Color = Color3.fromRGB(45, 50, 75)
+scaleStroke.Parent = scaleContainer
 
 local scaleLbl = Instance.new("TextLabel")
 scaleLbl.Size = UDim2.new(1, -20, 0, 18)
-scaleLbl.Position = UDim2.new(0, 12, 0, 4)
+scaleLbl.Position = UDim2.new(0, 12, 0, 5)
 scaleLbl.BackgroundTransparency = 1
 scaleLbl.Text = getText("ScaleLabel")
-scaleLbl.TextColor3 = Color3.fromRGB(200, 205, 230)
-scaleLbl.TextSize = 9
+scaleLbl.TextColor3 = Color3.fromRGB(220, 225, 245)
+scaleLbl.TextSize = 9.5
 scaleLbl.Font = Enum.Font.GothamBold
 scaleLbl.TextXAlignment = Enum.TextXAlignment.Left
 scaleLbl.ZIndex = 15
@@ -1569,9 +1905,10 @@ table.insert(translatableLabels, {Object = scaleLbl, Key = "ScaleLabel"})
 
 local function createScaleBtn(scaleVal, posX, text)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 45, 0, 20)
-    btn.Position = UDim2.new(0, posX, 0, 24)
+    btn.Size = UDim2.new(0, 54, 0, 22)
+    btn.Position = UDim2.new(0, posX, 0, 26)
     btn.BackgroundColor3 = Color3.fromRGB(30, 35, 50)
+    btn.BackgroundTransparency = (CurrentScale == scaleVal) and 0.1 or 0.4
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextSize = 9
@@ -1580,8 +1917,13 @@ local function createScaleBtn(scaleVal, posX, text)
     btn.Parent = scaleContainer
 
     local bCorner = Instance.new("UICorner")
-    bCorner.CornerRadius = UDim.new(0, 4)
+    bCorner.CornerRadius = UDim.new(0, 6)
     bCorner.Parent = btn
+
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Thickness = (CurrentScale == scaleVal) and 1.2 or 0.5
+    bStroke.Color = Color3.fromRGB(100, 100, 120)
+    bStroke.Parent = btn
 
     local conn = btn.MouseButton1Click:Connect(function()
         CurrentScale = scaleVal
@@ -1592,102 +1934,33 @@ local function createScaleBtn(scaleVal, posX, text)
 end
 
 createScaleBtn(0.85, 12, "0.85x")
-createScaleBtn(1.0, 62, "1.0x")
-createScaleBtn(1.15, 112, "1.15x")
-
--- FPS Boost / Memory Cleaner Button
-local fpsBoostBtn = Instance.new("TextButton")
-fpsBoostBtn.Size = UDim2.new(1, 0, 0, 32)
-fpsBoostBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-fpsBoostBtn.BackgroundTransparency = 0.3
-fpsBoostBtn.Text = getText("FpsBoostBtn")
-fpsBoostBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-fpsBoostBtn.TextSize = 9.5
-fpsBoostBtn.Font = Enum.Font.GothamBold
-fpsBoostBtn.ZIndex = 14
-fpsBoostBtn.Parent = settingsPage
-
-local boostCorner = Instance.new("UICorner")
-boostCorner.CornerRadius = UDim.new(0, 8)
-boostCorner.Parent = fpsBoostBtn
-
-fpsBoostBtn.MouseButton1Click:Connect(function()
-    pcall(function() collectgarbage("collect") end)
-    fpsBoostBtn.Text = "MEM CLEANED! ✓"
-    task.wait(1.5)
-    fpsBoostBtn.Text = getText("FpsBoostBtn")
-end)
-
--- UI Position Lock Switch
-local lockUiBtn = Instance.new("TextButton")
-lockUiBtn.Size = UDim2.new(1, 0, 0, 32)
-lockUiBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-lockUiBtn.BackgroundTransparency = 0.3
-lockUiBtn.Text = getText("LockUiBtn") .. ": OFF"
-lockUiBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-lockUiBtn.TextSize = 9.5
-lockUiBtn.Font = Enum.Font.GothamBold
-lockUiBtn.ZIndex = 14
-lockUiBtn.Parent = settingsPage
-
-local lockCorner = Instance.new("UICorner")
-lockCorner.CornerRadius = UDim.new(0, 8)
-lockCorner.Parent = lockUiBtn
-
-lockUiBtn.MouseButton1Click:Connect(function()
-    UIisLocked = not UIisLocked
-    lockUiBtn.Text = getText("LockUiBtn") .. (UIisLocked and ": ON" or ": OFF")
-    lockUiBtn.BackgroundColor3 = UIisLocked and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(50, 50, 65)
-end)
-
-local resetBtn = Instance.new("TextButton")
-resetBtn.Size = UDim2.new(1, 0, 0, 32)
-resetBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-resetBtn.BackgroundTransparency = 0.3
-resetBtn.Text = getText("ResetBtn")
-resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-resetBtn.TextSize = 9.5
-resetBtn.Font = Enum.Font.GothamBold
-resetBtn.ZIndex = 14
-resetBtn.Parent = settingsPage
-
-local resetCorner = Instance.new("UICorner")
-resetCorner.CornerRadius = UDim.new(0, 8)
-resetCorner.Parent = resetBtn
-table.insert(translatableLabels, {Object = resetBtn, Key = "ResetBtn"})
-
-local resetConn = resetBtn.MouseButton1Click:Connect(function()
-    CurrentTheme = "Purple"
-    CurrentScale = 1.0
-    MainScale.Scale = 1.0
-    HitboxSize = 5
-    SizeInput.Text = "5"
-    UserParticlesEnabled = true
-    ActualParticlesEnabled = true
-    updateThemeAccents()
-    saveConfiguration()
-end)
-table.insert(Connections, resetConn)
+createScaleBtn(1.0, 74, "1.0x")
+createScaleBtn(1.15, 136, "1.15x")
 
 local langContainer = Instance.new("Frame")
-langContainer.Size = UDim2.new(1, 0, 0, 48)
-langContainer.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
-langContainer.BackgroundTransparency = 0.3
+langContainer.Size = UDim2.new(1, 0, 0, 84)
+langContainer.BackgroundColor3 = Color3.fromRGB(15, 17, 24)
+langContainer.BackgroundTransparency = 0.2
 langContainer.BorderSizePixel = 0
 langContainer.ZIndex = 14
 langContainer.Parent = settingsPage
 
 local langCorner = Instance.new("UICorner")
-langCorner.CornerRadius = UDim.new(0, 8)
+langCorner.CornerRadius = UDim.new(0, 10)
 langCorner.Parent = langContainer
+
+local langStroke = Instance.new("UIStroke")
+langStroke.Thickness = 1
+langStroke.Color = Color3.fromRGB(45, 50, 75)
+langStroke.Parent = langContainer
 
 local langLabel = Instance.new("TextLabel")
 langLabel.Size = UDim2.new(1, -20, 0, 18)
-langLabel.Position = UDim2.new(0, 12, 0, 4)
+langLabel.Position = UDim2.new(0, 12, 0, 5)
 langLabel.BackgroundTransparency = 1
 langLabel.Text = getText("LanguageLabel")
-langLabel.TextColor3 = Color3.fromRGB(200, 205, 230)
-langLabel.TextSize = 9
+langLabel.TextColor3 = Color3.fromRGB(220, 225, 245)
+langLabel.TextSize = 9.5
 langLabel.Font = Enum.Font.GothamBold
 langLabel.TextXAlignment = Enum.TextXAlignment.Left
 langLabel.ZIndex = 15
@@ -1695,21 +1968,27 @@ langLabel.Parent = langContainer
 
 table.insert(translatableLabels, {Object = langLabel, Key = "LanguageLabel"})
 
-local function createLangButton(code, posX)
+local function createLangButton(code, posX, posY)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 50, 0, 20)
-    btn.Position = UDim2.new(0, posX, 0, 22)
+    btn.Size = UDim2.new(0, 52, 0, 22)
+    btn.Position = UDim2.new(0, posX, 0, posY)
     btn.BackgroundColor3 = (CurrentLanguage == code) and getThemeColor() or Color3.fromRGB(30, 35, 50)
+    btn.BackgroundTransparency = (CurrentLanguage == code) and 0.1 or 0.4
     btn.Text = code
-    btn.TextColor3 = (CurrentLanguage == code) and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 9
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 9.5
     btn.Font = Enum.Font.GothamBold
     btn.ZIndex = 16
     btn.Parent = langContainer
 
     local bCorner = Instance.new("UICorner")
-    bCorner.CornerRadius = UDim.new(0, 4)
+    bCorner.CornerRadius = UDim.new(0, 6)
     bCorner.Parent = btn
+
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Thickness = (CurrentLanguage == code) and 1.2 or 0.5
+    bStroke.Color = Color3.fromRGB(100, 100, 120)
+    bStroke.Parent = btn
 
     local langBtnConn = btn.MouseButton1Click:Connect(function()
         CurrentLanguage = code
@@ -1717,11 +1996,22 @@ local function createLangButton(code, posX)
             if child:IsA("TextButton") then
                 local active = (child.Text == CurrentLanguage)
                 child.BackgroundColor3 = active and getThemeColor() or Color3.fromRGB(30, 35, 50)
-                child.TextColor3 = active and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
+                child.BackgroundTransparency = active and 0.1 or 0.4
             end
         end
         Title.Text = getText("Title")
         if not HeaderShowClock then SubTitle.Text = getText("SubTitle") end
+        mainWelcomeLabel.Text = getText("MainWelcome") .. LocalPlayer.DisplayName .. "!"
+        mainInfoDetails.Text = string.format(
+            "%s@%s\n%s%s\n%s%d\n%s%d days\n%s%s\n%s%d",
+            getText("MainUsername"), LocalPlayer.Name,
+            getText("MainDisplay"), LocalPlayer.DisplayName,
+            getText("MainUserId"), LocalPlayer.UserId,
+            getText("MainAccountAge"), LocalPlayer.AccountAge or 0,
+            getText("MainGameInfo"), gameNameStr,
+            getText("MainPlaceId"), game.PlaceId
+        )
+        hbText.Text = getText("HalloweenBanner")
         CardHeader.Text = getText("ProfileTitle")
         CardCloseBtn.Text = getText("CloseBtn")
         CopyNameBtn.Text = getText("CopyName")
@@ -1734,16 +2024,73 @@ local function createLangButton(code, posX)
     table.insert(Connections, langBtnConn)
 end
 
-createLangButton("EN", 12)
-createLangButton("AR", 68)
-createLangButton("FR", 124)
+createLangButton("EN", 12, 28)
+createLangButton("AR", 70, 28)
+createLangButton("FR", 128, 28)
+createLangButton("ES", 12, 54)
+createLangButton("RU", 70, 54)
+createLangButton("PT", 128, 54)
+
+local function createActionBtn(textKey, bgColor, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 38)
+    btn.BackgroundColor3 = bgColor
+    btn.BackgroundTransparency = 0.2
+    btn.Text = getText(textKey)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 10
+    btn.Font = Enum.Font.GothamBold
+    btn.ZIndex = 14
+    btn.Parent = settingsPage
+
+    local bCorner = Instance.new("UICorner")
+    bCorner.CornerRadius = UDim.new(0, 10)
+    bCorner.Parent = btn
+
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Thickness = 1
+    bStroke.Color = Color3.fromRGB(100, 100, 120)
+    bStroke.Transparency = 0.4
+    bStroke.Parent = btn
+
+    table.insert(translatableLabels, {Object = btn, Key = textKey})
+
+    local conn = btn.MouseButton1Click:Connect(callback)
+    table.insert(Connections, conn)
+    return btn
+end
+
+local fpsBoostBtn = createActionBtn("FpsBoostBtn", Color3.fromRGB(0, 170, 90), function()
+    pcall(function() collectgarbage("collect") end)
+    fpsBoostBtn.Text = "MEM CLEANED! ✓"
+    task.wait(1.5)
+    fpsBoostBtn.Text = getText("FpsBoostBtn")
+end)
+
+local lockUiBtn = createActionBtn("LockUiBtn", Color3.fromRGB(45, 50, 70), function()
+    UIisLocked = not UIisLocked
+    lockUiBtn.Text = getText("LockUiBtn") .. (UIisLocked and ": ON" or ": OFF")
+    lockUiBtn.BackgroundColor3 = UIisLocked and Color3.fromRGB(0, 170, 90) or Color3.fromRGB(45, 50, 70)
+end)
+
+local resetBtn = createActionBtn("ResetBtn", Color3.fromRGB(210, 45, 45), function()
+    CurrentTheme = "Purple"
+    CurrentScale = 1.0
+    MainScale.Scale = 1.0
+    HitboxSize = 5
+    SizeInput.Text = "5"
+    UserParticlesEnabled = true
+    ActualParticlesEnabled = true
+    updateThemeAccents()
+    saveConfiguration()
+end)
 
 updateThemeAccents = function()
     local thColor = getThemeColor()
     FrameStroke.Color = thColor
-    CircleStroke.Color = thColor
+    CircleStroke.Color = Color3.fromRGB(255, 120, 0)
     GlowDot.BackgroundColor3 = thColor
-    SubTitle.TextColor3 = thColor
+    SubTitle.TextColor3 = Color3.fromRGB(255, 140, 0)
     CardStroke.Color = thColor
     CardHeader.TextColor3 = thColor
     CardTeamLbl.TextColor3 = thColor
@@ -1751,6 +2098,7 @@ updateThemeAccents = function()
     CopyDisplayBtn.BackgroundColor3 = thColor
     TpBtn.BackgroundColor3 = thColor
     SizeInput.TextColor3 = thColor
+    mainCardStroke.Color = Color3.fromRGB(255, 140, 0)
 
     for tName, tBtn in pairs(tabs) do
         if tName == activeTabName then
@@ -1761,7 +2109,7 @@ updateThemeAccents = function()
 end
 
 -- ================================================
--- CONFIG SAVE / LOAD SYSTEM (writefile / readfile)
+-- CONFIG SAVE / LOAD SYSTEM
 -- ================================================
 saveConfiguration = function()
     if writefile then
@@ -1775,6 +2123,7 @@ saveConfiguration = function()
                 EspEnabled = EspEnabled,
                 HideHeadEnabled = HideHeadEnabled,
                 AimLockEnabled = AimLockEnabled,
+                WallCheckerEnabled = WallCheckerEnabled,
                 FovCircleEnabled = FovCircleEnabled,
                 TargetEveryone = TargetEveryone,
                 TracersEnabled = TracersEnabled,
@@ -1800,6 +2149,7 @@ loadConfiguration = function()
                 EspEnabled = cfg.EspEnabled or false
                 HideHeadEnabled = cfg.HideHeadEnabled or false
                 AimLockEnabled = cfg.AimLockEnabled or false
+                WallCheckerEnabled = cfg.WallCheckerEnabled or false
                 FovCircleEnabled = cfg.FovCircleEnabled or false
                 TargetEveryone = cfg.TargetEveryone or false
                 TracersEnabled = cfg.TracersEnabled or false
@@ -1818,19 +2168,18 @@ updateLayoutAlignment()
 -- KEYBINDS & PERFORMANCE MONITOR LOOPS
 -- ================================================
 local keybindConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    
     if input.KeyCode == ToggleKeybind then
         MainFrame.Visible = not MainFrame.Visible
     end
 
-    if MainFrame.Visible then
+    if MainFrame.Visible and not gameProcessed then
         local tabMap = {
-            [Enum.KeyCode.One] = "Combat",
-            [Enum.KeyCode.Two] = "Visuals",
-            [Enum.KeyCode.Three] = "Players",
-            [Enum.KeyCode.Four] = "Status",
-            [Enum.KeyCode.Five] = "Settings"
+            [Enum.KeyCode.One] = "Main",
+            [Enum.KeyCode.Two] = "Combat",
+            [Enum.KeyCode.Three] = "Visuals",
+            [Enum.KeyCode.Four] = "Players",
+            [Enum.KeyCode.Five] = "Status",
+            [Enum.KeyCode.Six] = "Settings"
         }
         if tabMap[input.KeyCode] then
             switchTab(tabMap[input.KeyCode])
@@ -1838,6 +2187,32 @@ local keybindConn = UserInputService.InputBegan:Connect(function(input, gameProc
     end
 end)
 table.insert(Connections, keybindConn)
+
+local function isVisible(targetPart)
+    if not targetPart then return false end
+    local origin = Camera.CFrame.Position
+    local direction = targetPart.Position - origin
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    
+    local ignoreList = {LocalPlayer.Character}
+    if LockedPlayerTarget and LockedPlayerTarget.Character then
+        table.insert(ignoreList, LockedPlayerTarget.Character)
+    end
+    raycastParams.FilterDescendantsInstances = ignoreList
+    raycastParams.IgnoreWater = true
+
+    local result = workspace:Raycast(origin, direction, raycastParams)
+    if result then
+        local hitPart = result.Instance
+        if hitPart:IsDescendantOf(targetPart.Parent) then
+            return true
+        end
+        return false
+    end
+    return true
+end
 
 local frameCount = 0
 local lastCheck = tick()
@@ -1852,14 +2227,17 @@ local renderConn = RunService.RenderStepped:Connect(function()
         SubTitle.Text = os.date("%H:%M:%S")
     end
 
-    -- Smooth AimLock Logic
     if AimLockEnabled then
         local targetRoot = nil
         if LockedPlayerTarget and LockedPlayerTarget.Character then
             local hum = LockedPlayerTarget.Character:FindFirstChild("Humanoid")
             local root = LockedPlayerTarget.Character:FindFirstChild("HumanoidRootPart")
             if hum and hum.Health > 0 and root then
-                targetRoot = root
+                if not WallCheckerEnabled or isVisible(root) then
+                    targetRoot = root
+                else
+                    LockedPlayerTarget = nil
+                end
             else
                 LockedPlayerTarget = nil
             end
@@ -1872,12 +2250,14 @@ local renderConn = RunService.RenderStepped:Connect(function()
                     local hum = player.Character:FindFirstChild("Humanoid")
                     if hum and hum.Health > 0 then
                         local root = player.Character.HumanoidRootPart
-                        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-                        if onScreen then
-                            local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                            if dist < FovRadius and dist < closestDist then
-                                closestDist = dist
-                                targetRoot = root
+                        if not WallCheckerEnabled or isVisible(root) then
+                            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                            if onScreen then
+                                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                                if dist < FovRadius and dist < closestDist then
+                                    closestDist = dist
+                                    targetRoot = root
+                                end
                             end
                         end
                     end
@@ -1891,7 +2271,6 @@ local renderConn = RunService.RenderStepped:Connect(function()
         end
     end
 
-    -- Tracers Rendering Loop
     if TracersEnabled then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -2066,7 +2445,6 @@ local function processCharacter(player, character)
         end
     end
 
-    -- Chams Material Modification
     for _, part in ipairs(character:GetChildren()) do
         if part:IsA("BasePart") and part ~= root then
             if ChamsEnabled then

@@ -1,0 +1,487 @@
+-- LocalScript inside StarterPlayerScripts or StarterGui
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local Clipboard = setclipboard or toclipboard or function(text)
+	print("[Clipboard Fallback]: " .. text)
+end
+
+local localPlayer = Players.LocalPlayer
+
+-- ==========================================
+-- [1] Core Obfuscated Protection & Registry
+-- ==========================================
+local _0x3F = {
+	_k = "Noob Teleporter | @renko_only",
+	_u = "https://discord.gg/yourlink",
+	_s = math.random(100000, 999999)
+}
+
+if _G.__NX_CORE_INIT__ then
+	return
+end
+_G.__NX_CORE_INIT__ = _0x3F._s
+
+local function _val(_str)
+	return _str == _0x3F._k
+end
+
+local _SYS = {
+	_lock = false,
+	_run = false,
+	_pause = false,
+	_min = false,
+	_del = 0.1
+}
+
+local _parts = {}
+local _map = {}
+local _idx = 1
+local _vCount = 0
+local _conns = {}
+local _threads = {}
+
+-- ==========================================
+-- [2] Advanced Resource & Component Builder
+-- ==========================================
+local _gui = Instance.new("ScreenGui")
+_gui.Name = "NX_CORE_" .. tostring(_0x3F._s)
+_gui.ResetOnSpawn = false
+_gui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+local _frm = Instance.new("Frame", _gui)
+_frm.Size = UDim2.new(0, 270, 0, 250)
+_frm.Position = UDim2.new(0.05, 0, 0.35, 0)
+_frm.BackgroundColor3 = Color3.fromRGB(24, 25, 38)
+_frm.BorderSizePixel = 0
+_frm.Active = true
+
+Instance.new("UICorner", _frm).CornerRadius = UDim.new(0, 10)
+local _stk = Instance.new("UIStroke", _frm)
+_stk.Color = Color3.fromRGB(123, 44, 191)
+_stk.Thickness = 1.5
+
+local _tBar = Instance.new("Frame", _frm)
+_tBar.Size = UDim2.new(1, 0, 0, 35)
+_tBar.BackgroundColor3 = Color3.fromRGB(32, 33, 50)
+_tBar.BorderSizePixel = 0
+Instance.new("UICorner", _tBar).CornerRadius = UDim.new(0, 10)
+
+local _tLbl = Instance.new("TextLabel", _tBar)
+_tLbl.Size = UDim2.new(0.65, 0, 1, 0)
+_tLbl.Position = UDim2.new(0.05, 0, 0, 0)
+_tLbl.BackgroundTransparency = 1
+_tLbl.Text = _0x3F._k
+_tLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+_tLbl.TextSize = 12
+_tLbl.Font = Enum.Font.GothamBold
+_tLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local _mBtn = Instance.new("TextButton", _tBar)
+_mBtn.Size = UDim2.new(0, 25, 0, 25)
+_mBtn.Position = UDim2.new(0.85, -5, 0.15, 0)
+_mBtn.BackgroundColor3 = Color3.fromRGB(45, 47, 70)
+_mBtn.Text = "-"
+_mBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+_mBtn.TextSize = 16
+_mBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", _mBtn).CornerRadius = UDim.new(0, 6)
+
+local _hList = {}
+local function _cEl(class, props)
+	local obj = Instance.new(class)
+	for k, v in pairs(props) do
+		obj[k] = v
+	end
+	obj.Parent = _frm
+	table.insert(_hList, obj)
+	return obj
+end
+
+local _cLbl = _cEl("TextLabel", {
+	Size = UDim2.new(0.9, 0, 0, 20),
+	Position = UDim2.new(0.05, 0, 0.17, 0),
+	BackgroundTransparency = 1,
+	Text = "Progress: 0/0 (0%)",
+	TextColor3 = Color3.fromRGB(200, 205, 220),
+	TextSize = 13,
+	Font = Enum.Font.GothamMedium
+})
+
+local _bBg = _cEl("Frame", {
+	Size = UDim2.new(0.9, 0, 0, 8),
+	Position = UDim2.new(0.05, 0, 0.27, 0),
+	BackgroundColor3 = Color3.fromRGB(40, 42, 60),
+	BorderSizePixel = 0
+})
+Instance.new("UICorner", _bBg).CornerRadius = UDim.new(1, 0)
+
+local _bFill = Instance.new("Frame", _bBg)
+_bFill.Size = UDim2.new(0, 0, 1, 0)
+_bFill.BackgroundColor3 = Color3.fromRGB(0, 245, 212)
+_bFill.BorderSizePixel = 0
+Instance.new("UICorner", _bFill).CornerRadius = UDim.new(1, 0)
+
+local _sLbl = _cEl("TextLabel", {
+	Size = UDim2.new(0.9, 0, 0, 18),
+	Position = UDim2.new(0.05, 0, 0.33, 0),
+	BackgroundTransparency = 1,
+	Text = "Status: Idle",
+	TextColor3 = Color3.fromRGB(130, 135, 160),
+	TextSize = 11,
+	Font = Enum.Font.Gotham
+})
+
+local _dLbl = _cEl("TextLabel", {
+	Size = UDim2.new(0.5, 0, 0, 25),
+	Position = UDim2.new(0.05, 0, 0.43, 0),
+	BackgroundTransparency = 1,
+	Text = "Delay: 0.10s",
+	TextColor3 = Color3.fromRGB(220, 225, 240),
+	TextSize = 12,
+	Font = Enum.Font.Gotham,
+	TextXAlignment = Enum.TextXAlignment.Left
+})
+
+local _subBtn = _cEl("TextButton", {
+	Size = UDim2.new(0, 30, 0, 22),
+	Position = UDim2.new(0.6, 0, 0.43, 0),
+	BackgroundColor3 = Color3.fromRGB(45, 47, 70),
+	Text = "-",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.GothamBold
+})
+Instance.new("UICorner", _subBtn).CornerRadius = UDim.new(0, 4)
+
+local _addBtn = _cEl("TextButton", {
+	Size = UDim2.new(0, 30, 0, 22),
+	Position = UDim2.new(0.75, 5, 0.43, 0),
+	BackgroundColor3 = Color3.fromRGB(45, 47, 70),
+	Text = "+",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	Font = Enum.Font.GothamBold
+})
+Instance.new("UICorner", _addBtn).CornerRadius = UDim.new(0, 4)
+
+local _tglBtn = _cEl("TextButton", {
+	Size = UDim2.new(0.9, 0, 0, 32),
+	Position = UDim2.new(0.05, 0, 0.58, 0),
+	BackgroundColor3 = Color3.fromRGB(0, 180, 136),
+	Text = "Start",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	TextSize = 13,
+	Font = Enum.Font.GothamBold
+})
+Instance.new("UICorner", _tglBtn).CornerRadius = UDim.new(0, 6)
+
+local _pseBtn = _cEl("TextButton", {
+	Size = UDim2.new(0.9, 0, 0, 32),
+	Position = UDim2.new(0.05, 0, 0.75, 0),
+	BackgroundColor3 = Color3.fromRGB(220, 150, 0),
+	Text = "Pause",
+	TextColor3 = Color3.fromRGB(255, 255, 255),
+	TextSize = 13,
+	Font = Enum.Font.GothamBold
+})
+Instance.new("UICorner", _pseBtn).CornerRadius = UDim.new(0, 6)
+
+-- ==========================================
+-- [3] Interlocked Hard Shutdown & Lockdown
+-- ==========================================
+local function _secureShutdown(reason)
+	if _SYS._lock then return end
+	_SYS._lock = true
+	_SYS._run = false
+
+	for _, conn in ipairs(_conns) do
+		if conn and conn.Connected then
+			pcall(function() conn:Disconnect() end)
+		end
+	end
+
+	for _, th in ipairs(_threads) do
+		if th then
+			pcall(function() task.cancel(th) end)
+		end
+	end
+
+	if _G.__NX_CORE_INIT__ == _0x3F._s then
+		_G.__NX_CORE_INIT__ = nil
+	end
+
+	_gui:ClearAllChildren()
+
+	local _f = Instance.new("Frame", _gui)
+	_f.Size = UDim2.new(0, 320, 0, 180)
+	_f.Position = UDim2.new(0.5, -160, 0.4, -90)
+	_f.BackgroundColor3 = Color3.fromRGB(40, 20, 20)
+	_f.BorderSizePixel = 0
+	
+	Instance.new("UICorner", _f).CornerRadius = UDim.new(0, 10)
+	local _sk = Instance.new("UIStroke", _f)
+	_sk.Color = Color3.fromRGB(255, 60, 60)
+	_sk.Thickness = 2
+
+	local _l = Instance.new("TextLabel", _f)
+	_l.Size = UDim2.new(0.9, 0, 0, 60)
+	_l.Position = UDim2.new(0.05, 0, 0.1, 0)
+	_l.BackgroundTransparency = 1
+	_l.Text = "Critical Error: Core Tamper Detected.\nPlease use the original verified distribution."
+	_l.TextColor3 = Color3.fromRGB(255, 255, 255)
+	_l.TextSize = 12
+	_l.Font = Enum.Font.GothamBold
+	_l.TextWrapped = true
+
+	local _b = Instance.new("TextButton", _f)
+	_b.Size = UDim2.new(0.8, 0, 0, 32)
+	_b.Position = UDim2.new(0.1, 0, 0.52, 0)
+	_b.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	_b.Text = "Copy Original Source Link"
+	_b.TextColor3 = Color3.fromRGB(255, 255, 255)
+	_b.Font = Enum.Font.GothamBold
+	_b.TextSize = 11
+	Instance.new("UICorner", _b).CornerRadius = UDim.new(0, 6)
+
+	local _bc = _b.MouseButton1Click:Connect(function()
+		pcall(function() Clipboard(_0x3F._u) end)
+		print("Source Link: " .. _0x3F._u)
+		_b.Text = "Link Copied / Printed to Output!"
+	end)
+	table.insert(_conns, _bc)
+end
+
+-- ==========================================
+-- [4] Continuous Interlocked Watchdog
+-- ==========================================
+local _wdThread = task.spawn(function()
+	while true do
+		task.wait(2)
+		if _SYS._lock then break end
+
+		local _status, _err = pcall(function()
+			if not _frm or not _frm.Parent or not _tLbl then
+				error("UI layout invalidated")
+			end
+			if not _val(_tLbl.Text) then
+				error("Signature mismatch")
+			end
+			if _G.__NX_CORE_INIT__ ~= _0x3F._s then
+				error("Registry integrity fault")
+			end
+		end)
+
+		if not _status then
+			_secureShutdown(_err or "Integrity Breach")
+			break
+		end
+	end
+end)
+table.insert(_threads, _wdThread)
+
+-- ==========================================
+-- [5] Engine Core Operations & Handlers
+-- ==========================================
+local function _scan()
+	local _f = {}
+	local _s = {}
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and not _s[obj] then
+			if string.find(string.lower(obj.Name), "noob") then
+				_s[obj] = true
+				table.insert(_f, obj)
+			end
+		end
+	end
+	return _f
+end
+
+local function _hl(part)
+	local _sb = Instance.new("SelectionBox")
+	_sb.Adornee = part
+	_sb.Color3 = Color3.fromRGB(0, 245, 212)
+	_sb.Parent = part
+	
+	task.delay(0.1, function()
+		if _sb and _sb.Parent then
+			_sb:Destroy()
+		end
+	end)
+end
+
+local function _nc(char, state)
+	for _, p in ipairs(char:GetDescendants()) do
+		if p:IsA("BasePart") then
+			p.CanCollide = not state
+		end
+	end
+end
+
+local function _stop()
+	_SYS._run = false
+	_SYS._pause = false
+	_tglBtn.Text = "Start"
+	_tglBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 136)
+	_pseBtn.Text = "Pause"
+	_sLbl.Text = "Status: Stopped"
+	
+	local _ch = localPlayer.Character
+	if _ch then _nc(_ch, false) end
+end
+
+-- Input & Window Management Bindings
+local _drag, _dStart, _sPos
+local _dBeg = _tBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		_drag = true
+		_dStart = input.Position
+		_sPos = _frm.Position
+	end
+end)
+table.insert(_conns, _dBeg)
+
+local _dChg = UserInputService.InputChanged:Connect(function(input)
+	if _drag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local _d = input.Position - _dStart
+		_frm.Position = UDim2.new(_sPos.X.Scale, _sPos.X.Offset + _d.X, _sPos.Y.Scale, _sPos.Y.Offset + _d.Y)
+	end
+end)
+table.insert(_conns, _dChg)
+
+local _dEnd = UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		_drag = false
+	end
+end)
+table.insert(_conns, _dEnd)
+
+local _mConn = _mBtn.MouseButton1Click:Connect(function()
+	if _SYS._lock then return end
+	_SYS._min = not _SYS._min
+	local _sz = _SYS._min and UDim2.new(0, 270, 0, 35) or UDim2.new(0, 270, 0, 250)
+	for _, el in ipairs(_hList) do
+		el.Visible = not _SYS._min
+	end
+	TweenService:Create(_frm, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = _sz}):Play()
+	_mBtn.Text = _SYS._min and "+" or "-"
+end)
+table.insert(_conns, _mConn)
+
+local _subConn = _subBtn.MouseButton1Click:Connect(function()
+	if _SYS._lock then return end
+	_SYS._del = math.clamp(_SYS._del - 0.05, 0.05, 1.0)
+	_dLbl.Text = string.format("Delay: %.2fs", _SYS._del)
+end)
+table.insert(_conns, _subConn)
+
+local _addConn = _addBtn.MouseButton1Click:Connect(function()
+	if _SYS._lock then return end
+	_SYS._del = math.clamp(_SYS._del + 0.05, 0.05, 1.0)
+	_dLbl.Text = string.format("Delay: %.2fs", _SYS._del)
+end)
+table.insert(_conns, _addConn)
+
+-- ==========================================
+-- [6] Main Execution & Reliable Retry Loop
+-- ==========================================
+local _execThread = task.spawn(function()
+	while true do
+		if _SYS._lock then break end
+
+		if _SYS._run and not _SYS._pause then
+			local _total = #_parts
+			
+			if _idx <= _total then
+				_sLbl.Text = "Status: Processing..."
+				local _target = _parts[_idx]
+				
+				local _root = nil
+				local _attempts = 0
+				local _maxAttempts = 5
+				
+				while not _root and _attempts < _maxAttempts and _SYS._run and not _SYS._lock do
+					local _char = localPlayer.Character
+					if _char then
+						_root = _char:FindFirstChild("HumanoidRootPart")
+					end
+					if not _root then
+						_attempts += 1
+						task.wait(0.2)
+					end
+				end
+				
+				if _target and _target.Parent and _root then
+					local _chRef = localPlayer.Character
+					if _chRef then _nc(_chRef, true) end
+					
+					_root.CFrame = _target.CFrame * CFrame.new(0, 3, 0)
+					_hl(_target)
+					
+					if not _map[_target] then
+						_map[_target] = true
+						_vCount += 1
+					end
+					
+					local _pct = math.clamp(_vCount / _total, 0, 1)
+					_cLbl.Text = string.format("Progress: %d/%d (%d%%)", _vCount, _total, math.floor(_pct * 100))
+					TweenService:Create(_bFill, TweenInfo.new(0.1), {Size = UDim2.new(_pct, 0, 1, 0)}):Play()
+					
+					_idx += 1
+				else
+					-- Strict enforcement: True retry/skip protocol preserving sequence
+					_idx += 1
+				end
+			else
+				_stop()
+				_sLbl.Text = "Status: Sequence Complete"
+			end
+		end
+		task.wait(_SYS._del)
+	end
+end)
+table.insert(_threads, _execThread)
+
+local _tglConn = _tglBtn.MouseButton1Click:Connect(function()
+	if _SYS._lock then return end
+	
+	if not _SYS._run then
+		_parts = _scan()
+		_map = {}
+		_idx = 1
+		_vCount = 0
+		
+		if #_parts == 0 then
+			_sLbl.Text = "Status: No Targets Found"
+			return
+		end
+		
+		_SYS._run = true
+		_SYS._pause = false
+		_tglBtn.Text = "Stop"
+		_tglBtn.BackgroundColor3 = Color3.fromRGB(225, 45, 85)
+		_pseBtn.Text = "Pause"
+		_sLbl.Text = "Status: Active"
+	else
+		_stop()
+	end
+end)
+table.insert(_conns, _tglConn)
+
+local _pseConn = _pseBtn.MouseButton1Click:Connect(function()
+	if _SYS._lock then return end
+	if _SYS._run then
+		_SYS._pause = not _SYS._pause
+		if _SYS._pause then
+			_pseBtn.Text = "Resume"
+			_sLbl.Text = "Status: Paused"
+			local _ch = localPlayer.Character
+			if _ch then _nc(_ch, false) end
+		else
+			_pseBtn.Text = "Pause"
+			_sLbl.Text = "Status: Resuming..."
+		end
+	end
+end)
+table.insert(_conns, _pseConn)
